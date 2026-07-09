@@ -1,0 +1,5 @@
+node_modules/
+*.cjs
+*.log
+eslint_output.txt
+.firebase/

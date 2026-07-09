@@ -1,0 +1,1403 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
+  <title>Control de Socios - Sistema Premium</title>
+  <style>
+    #error-overlay { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.8); color:red; z-index:9999; padding:50px; font-size:24px; white-space:pre-wrap; overflow:auto;}
+  </style>
+  <script>
+    window.onerror = function(msg, url, line, col, error) {
+      const err = document.getElementById('error-overlay');
+      if (err) { err.style.display = 'block'; err.textContent += "Error: " + msg + "\\nLine: " + line + "\\nFile: " + url + "\\n\\n"; }
+    };
+    window.addEventListener("unhandledrejection", function(e) {
+      const err = document.getElementById('error-overlay');
+      if (err) { err.style.display = 'block'; err.textContent += "Promise Error: " + e.reason + "\\n\\n"; }
+    });
+  </script>
+  <link rel="icon" type="image/svg+xml" href="favicon.svg">
+  <link rel="alternate icon" href="favicon.svg">
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="stylesheet" href="styles.css">
+  <!-- SheetJS to read excel and csv files in client side -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+</head>
+
+<body>
+  <script>
+    console.log("Global error handler script injected!");
+    window.addEventListener('error', function(e) {
+      console.error("GLOBAL ERROR CAPTURED: ", e.message, " at ", e.filename, ":", e.lineno);
+    });
+  </script>
+
+  <div id="login-screen" style="display: flex; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #f8fafc; z-index: 10000; align-items: center; justify-content: center; flex-direction: column;">
+    <div style="background: white; padding: 2rem; border-radius: 8px; box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1); width: 100%; max-width: 400px;">
+      <div style="text-align: center; margin-bottom: 1.5rem;">
+        <img src="assets/logo-canarus.png" alt="Logo Casal" style="width: 250px; height: auto; max-width: 100%;">
+      </div>
+      <h2 style="text-align: center; margin-bottom: 1.5rem; color: #1e293b; font-family: 'Outfit', sans-serif;">Iniciar Sesión</h2>
+      <form id="login-form">
+        <div style="margin-bottom: 1rem;">
+          <label style="display: block; margin-bottom: 0.5rem; color: #475569; font-family: 'Outfit', sans-serif;">Correo electrónico</label>
+          <input type="email" id="login-email" required style="width: 100%; padding: 0.75rem; border: 1px solid #cbd5e1; border-radius: 4px; box-sizing: border-box; font-family: 'Outfit', sans-serif;">
+        </div>
+        <div style="margin-bottom: 1.5rem;">
+          <label style="display: block; margin-bottom: 0.5rem; color: #475569; font-family: 'Outfit', sans-serif;">Contraseña</label>
+          <input type="password" id="login-password" required style="width: 100%; padding: 0.75rem; border: 1px solid #cbd5e1; border-radius: 4px; box-sizing: border-box; font-family: 'Outfit', sans-serif;">
+        </div>
+        <div id="login-error" style="color: #ef4444; margin-bottom: 1rem; display: none; font-size: 0.875rem; text-align: center;"></div>
+        <button type="submit" class="btn btn-primary" style="width: 100%; justify-content: center; padding: 0.75rem; font-size: 1rem;">Entrar</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Header -->
+  <header class="app-header">
+    <div class="app-title">
+      <div class="logo-icon-img">
+        <img src="assets/logo-canarus.png" alt="Logo Casal">
+      </div>
+      <span style="letter-spacing: 1px;">GESTIÓN DEL CASAL <small style="opacity: 0.8; font-size: 0.6em; background: rgba(255,255,255,0.2); padding: 2px 6px; border-radius: 4px; margin-left: 5px;">v2.0</small></span>
+    </div>
+    <div class="user-info">
+      <div class="font-size-controls" style="margin-right: 1rem; display: inline-flex; align-items: center; gap: 0.25rem;">
+        <span style="font-size: 0.8rem; font-weight: 600; color: var(--text-muted); margin-right: 0.25rem;"><i class="fa-solid fa-font"></i></span>
+        <button class="btn btn-outline btn-sm font-toggle-btn active" data-size="1" title="Texto Normal">A</button>
+        <button class="btn btn-outline btn-sm font-toggle-btn" data-size="1.2" title="Texto Grande">A+</button>
+        <button class="btn btn-outline btn-sm font-toggle-btn" data-size="1.4" title="Texto Muy Grande">A++</button>
+      </div>
+      <button id="btn-open-config" class="btn btn-outline btn-sm" style="margin-right: 1rem; border-color: #cbd5e1;">
+        <i class="fa-solid fa-gear"></i> Configuración
+      </button>
+      <button id="btn-open-mobile-connect" class="btn btn-outline btn-sm" style="margin-right: 1rem; border-color: #cbd5e1;">
+        <i class="fa-solid fa-mobile-screen"></i> Conectar Móvil
+      </button>
+      <span class="badge badge-info" id="total-socios-badge" style="margin-right: 1rem;">
+        <i class="fa-solid fa-users"></i> <span id="header-total-socios">0</span> Socios
+      </span>
+      <span class="badge badge-warning" id="connection-status" title="Estado de conexion con Firebase">
+        <i class="fa-solid fa-circle-notch fa-spin"></i> Conectando...
+      </span>
+    </div>
+  </header>
+
+
+
+  <!-- Navigation -->
+  <nav class="nav-tabs" id="mainNav">
+    <div class="nav-tab active" data-target="view-home"><i class="fa-solid fa-house"></i> Inicio</div>
+    <div class="nav-tab" data-target="view-socios"><i class="fa-solid fa-users"></i> Socios</div>
+    <div class="nav-tab" data-target="view-cuotas"><i class="fa-solid fa-receipt"></i> Cuotas</div>
+    <div class="nav-tab" data-target="view-actividades"><i class="fa-solid fa-person-running"></i> Actividades</div>
+    <div class="nav-tab" data-target="view-inscripciones"><i class="fa-solid fa-clipboard-list"></i> Inscripciones</div>
+    <div class="nav-tab" data-target="view-pasar-lista"><i class="fa-solid fa-clipboard-user"></i> Asistencia</div>
+    <div class="nav-tab" data-target="view-monitores"><i class="fa-solid fa-chalkboard-user"></i> Monitores</div>
+    <div class="nav-tab" data-target="view-salas"><i class="fa-solid fa-door-open"></i> Salas</div>
+    <div class="nav-tab" data-target="view-taqueras"><i class="fa-solid fa-box-archive"></i> Taqueras</div>
+    <div class="nav-tab" data-target="view-cuentas"><i class="fa-solid fa-money-bill-wave"></i> Cuentas</div>
+    <div class="nav-tab" data-target="view-informes"><i class="fa-solid fa-file-pdf"></i> Informes</div>
+  </nav>
+
+  <main class="container fade-in">
+
+    <!-- ======================= -->
+    <!-- SECTION: HOME / MENU    -->
+    <!-- ======================= -->
+    <section id="view-home" class="view-section active">
+      
+      <div class="menu-grid">
+        <div class="menu-card" data-target="view-socios">
+          <img src="assets/icon_socios.png" alt="Socios" class="card-icon-img">
+          <h3>Socios</h3>
+          <p>Gestión de altas, bajas y listados generales</p>
+        </div>
+        
+        <div class="menu-card" data-target="view-cuotas">
+          <img src="assets/icon_cuotas.png" alt="Cuotas" class="card-icon-img">
+          <h3>Cuotas</h3>
+          <p>Control de pagos anuales y recaudación</p>
+        </div>
+        
+        <div class="menu-card" data-target="view-actividades">
+          <img src="assets/icon_actividades.png" alt="Actividades" class="card-icon-img">
+          <h3>Actividades</h3>
+          <p>Horarios, monitores y salas asignadas</p>
+        </div>
+        
+        <div class="menu-card" data-target="view-inscripciones">
+          <img src="assets/icon_inscripciones.png" alt="Inscripciones" class="card-icon-img">
+          <h3>Inscripciones</h3>
+          <p>Apuntar socios a actividades específicas</p>
+        </div>
+        
+        <div class="menu-card" data-target="view-pasar-lista">
+          <img src="assets/icon_asistencia.png" alt="Asistencia" class="card-icon-img">
+          <h3>Asistencia</h3>
+          <p>Pasar lista y registrar asistencia de socios</p>
+        </div>
+        
+        <div class="menu-card" data-target="view-monitores">
+          <img src="assets/icon_monitores.png" alt="Monitores" class="card-icon-img">
+          <h3>Monitores</h3>
+          <p>Gestión de personal y sus accesos PIN</p>
+        </div>
+
+        <div class="menu-card" data-target="view-salas">
+          <img src="assets/icon_salas.png" alt="Salas" class="card-icon-img">
+          <h3>Salas</h3>
+          <p>Configuración de espacios y aforos</p>
+        </div>
+        
+        <div class="menu-card" data-target="view-taqueras">
+          <img src="assets/icon_taqueras.png" alt="Taqueras" class="card-icon-img">
+          <h3>Taqueras</h3>
+          <p>Asignación de taqueras (billar) a socios</p>
+        </div>
+        
+        <div class="menu-card" data-target="view-cuentas">
+          <img src="assets/icon_cuentas.png" alt="Cuentas" class="card-icon-img">
+          <h3>Cuentas</h3>
+          <p>Gestión de ingresos, gastos y estado de cuentas</p>
+        </div>
+
+        <div class="menu-card" data-target="view-informes">
+          <img src="assets/icon_informes.png" alt="Informes" class="card-icon-img">
+          <h3>Informes</h3>
+          <p>Generación e impresión de listados</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ======================= -->
+    <!-- SECTION: CUOTAS         -->
+    <!-- ======================= -->
+    <section id="view-cuotas" class="view-section">
+      <div class="controls-bar cuotas-controls">
+        <div class="search-box">
+          <i class="fa-solid fa-search search-icon"></i>
+          <input type="text" id="searchCuotas" class="search-input" placeholder="Buscar por socio...">
+        </div>
+
+        <div class="cuotas-summary-inline" style="display: flex; gap: 0.5rem; flex: 1; justify-content: center;">
+          <div class="summary-card primary">
+            <div class="summary-icon"><i class="fa-solid fa-money-bill-trend-up"></i></div>
+            <div class="summary-info">
+              <span class="summary-label">Recaudado</span>
+              <span class="summary-value" id="total-recaudado">0.00 €</span>
+            </div>
+          </div>
+          <div class="summary-card warning">
+            <div class="summary-icon"><i class="fa-solid fa-hourglass-half"></i></div>
+            <div class="summary-info">
+              <span class="summary-label">Pendientes</span>
+              <span class="summary-value" id="total-pendientes">0</span>
+            </div>
+          </div>
+          <div class="summary-card info">
+            <div class="summary-icon"><i class="fa-solid fa-user-shield"></i></div>
+            <div class="summary-info">
+              <span class="summary-label">Exentos (+90)</span>
+              <span class="summary-value" id="total-exentos">0</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="config-fee-group">
+          <div class="year-select-wrapper">
+            <label>Año:</label>
+            <select id="cuota-year-select" class="form-control select-compact">
+              <!-- Dynamically populated -->
+            </select>
+          </div>
+          <div class="amount-config-wrapper">
+            <label>Importe Cuota:</label>
+            <div class="input-with-button">
+              <input type="number" id="cuota-amount-input" class="form-control select-compact" step="0.01" value="0.00">
+              <button class="btn btn-primary btn-sm" id="btn-save-cuota-config">
+                <i class="fa-solid fa-save"></i>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="table-container" style="min-height: 0; overflow-y: auto;">
+        <table class="members-table">
+          <thead>
+            <tr>
+              <th onclick="window.sortCuotasBy('numeroSocio')" style="cursor: pointer; user-select: none;">Nº Socio <span id="sort-cuotas-icon-numeroSocio" class="sort-icon"><i class="fa-solid fa-sort"></i></span></th>
+              <th onclick="window.sortCuotasBy('socio')" style="cursor: pointer; user-select: none;">Socio <span id="sort-cuotas-icon-socio" class="sort-icon"><i class="fa-solid fa-sort"></i></span></th>
+              <th onclick="window.sortCuotasBy('telefono')" style="cursor: pointer; user-select: none;">Teléfono <span id="sort-cuotas-icon-telefono" class="sort-icon"><i class="fa-solid fa-sort"></i></span></th>
+              <th onclick="window.sortCuotasBy('edad')" style="cursor: pointer; user-select: none;">Edad <span id="sort-cuotas-icon-edad" class="sort-icon"><i class="fa-solid fa-sort"></i></span></th>
+              <th onclick="window.sortCuotasBy('estadoPago')" style="cursor: pointer; user-select: none;">Estado Pago <span id="sort-cuotas-icon-estadoPago" class="sort-icon"><i class="fa-solid fa-sort"></i></span></th>
+              <th>Acciones</th>
+            </tr>
+          </thead>
+          <tbody id="table-cuotas">
+            <!-- Dynamically populated -->
+          </tbody>
+        </table>
+      </div>
+      <div class="pagination-container" id="pagination-cuotas"></div>
+    </section>
+
+    <!-- ======================= -->
+    <!-- SECTION: SOCIOS         -->
+    <!-- ======================= -->
+    <section id="view-socios" class="view-section">
+      <div class="controls-bar socios-toolbar">
+        <div class="search-box">
+          <i class="fa-solid fa-search search-icon"></i>
+          <input type="text" id="searchSocios" class="search-input" placeholder="Buscar socios...">
+        </div>
+        <div class="actions-group" style="display: flex; gap: 0.75rem;">
+          <button class="btn btn-danger" id="btn-bulk-delete-socios" style="display: none;" data-action="confirm-bulk-delete">
+            <i class="fa-solid fa-trash"></i> Eliminar (<span id="selected-socios-count">0</span>)
+          </button>
+          <button class="btn btn-primary" data-action="open-modal" data-col="socios">
+            <i class="fa-solid fa-plus"></i> Nuevo Socio
+          </button>
+        </div>
+      </div>
+      <div class="table-container" style="min-height: 0; overflow-y: auto;">
+        <table class="members-table">
+          <thead>
+            <tr id="table-socios-head-tr">
+              <th style="width: 40px; text-align: center; vertical-align: middle;">
+                <input type="checkbox" id="select-all-socios" style="cursor: pointer; width: 16px; height: 16px; accent-color: var(--primary);">
+              </th>
+              <th onclick="window.sortBy('numeroSocio')" style="cursor: pointer; user-select: none;">Nº Socio <span id="sort-icon-numeroSocio" class="sort-icon"><i class="fa-solid fa-sort"></i></span></th>
+              <th onclick="window.sortBy('nombre')" style="cursor: pointer; user-select: none;">Nombre <span id="sort-icon-nombre" class="sort-icon"><i class="fa-solid fa-sort"></i></span></th>
+              <th onclick="window.sortBy('apellido1')" style="cursor: pointer; user-select: none;">1er Apellido <span id="sort-icon-apellido1" class="sort-icon"><i class="fa-solid fa-sort"></i></span></th>
+              <th onclick="window.sortBy('apellido2')" style="cursor: pointer; user-select: none;">2do Apellido <span id="sort-icon-apellido2" class="sort-icon"><i class="fa-solid fa-sort"></i></span></th>
+              <th onclick="window.sortBy('telefono')" style="cursor: pointer; user-select: none;">Teléfono <span id="sort-icon-telefono" class="sort-icon"><i class="fa-solid fa-sort"></i></span></th>
+              <th onclick="window.sortBy('edad')" style="cursor: pointer; user-select: none;">Edad <span id="sort-icon-edad" class="sort-icon"><i class="fa-solid fa-sort"></i></span></th>
+              <!-- Cuotas headers injected by JS -->
+              <th onclick="window.sortBy('tiquet')" style="cursor: pointer; user-select: none; text-align: center;">Tiquet <span id="sort-icon-tiquet" class="sort-icon"><i class="fa-solid fa-sort"></i></span></th>
+              <th>Acciones</th>
+            </tr>
+          </thead>
+          <tbody id="table-socios">
+            <tr>
+              <td colspan="9">
+                <div class="empty-state"><i class="fa-solid fa-circle-notch fa-spin empty-icon"></i>
+                  <p>Cargando datos...</p>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="pagination-container" id="pagination-socios"></div>
+    </section>
+
+    <!-- ======================= -->
+    <!-- SECTION: ACTIVIDADES    -->
+    <!-- ======================= -->
+    <section id="view-actividades" class="view-section">
+      <div class="controls-bar">
+        <div class="search-box">
+          <i class="fa-solid fa-search search-icon"></i>
+          <input type="text" id="searchActividades" class="search-input" placeholder="Buscar actividades...">
+        </div>
+        <button class="btn btn-primary" data-action="open-modal" data-col="actividades">
+          <i class="fa-solid fa-plus"></i> Nueva Actividad
+        </button>
+      </div>
+      <div class="table-container">
+        <table class="members-table">
+          <thead>
+            <tr>
+              <th onclick="window.sortActividadesBy('codigo')" style="cursor: pointer; user-select: none;">ID <span id="sort-actividades-icon-codigo" class="sort-icon"><i class="fa-solid fa-sort"></i></span></th>
+              <th onclick="window.sortActividadesBy('nombre')" style="cursor: pointer; user-select: none;">Nombre Actividad <span id="sort-actividades-icon-nombre" class="sort-icon"><i class="fa-solid fa-sort"></i></span></th>
+              <th onclick="window.sortActividadesBy('dia')" style="cursor: pointer; user-select: none;">Día Semana <span id="sort-actividades-icon-dia" class="sort-icon"><i class="fa-solid fa-sort"></i></span></th>
+              <th onclick="window.sortActividadesBy('horario')" style="cursor: pointer; user-select: none;">Horario <span id="sort-actividades-icon-horario" class="sort-icon"><i class="fa-solid fa-sort"></i></span></th>
+              <th onclick="window.sortActividadesBy('monitor')" style="cursor: pointer; user-select: none;">Monitor <span id="sort-actividades-icon-monitor" class="sort-icon"><i class="fa-solid fa-sort"></i></span></th>
+              <th onclick="window.sortActividadesBy('sala')" style="cursor: pointer; user-select: none;">Sala <span id="sort-actividades-icon-sala" class="sort-icon"><i class="fa-solid fa-sort"></i></span></th>
+              <th onclick="window.sortActividadesBy('maxSocios')" style="cursor: pointer; user-select: none;">Ocupación <span id="sort-actividades-icon-maxSocios" class="sort-icon"><i class="fa-solid fa-sort"></i></span></th>
+              <th>Asistencia</th>
+              <th>Acciones</th>
+            </tr>
+          </thead>
+          <tbody id="table-actividades"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- ======================= -->
+    <!-- SECTION: MONITORES      -->
+    <!-- ======================= -->
+    <section id="view-monitores" class="view-section">
+      <div class="controls-bar">
+        <div class="search-box">
+          <i class="fa-solid fa-search search-icon"></i>
+          <input type="text" id="searchMonitores" class="search-input" placeholder="Buscar monitores...">
+        </div>
+        <button class="btn btn-primary" data-action="open-modal" data-col="monitores">
+          <i class="fa-solid fa-plus"></i> Nuevo Monitor
+        </button>
+      </div>
+      <div class="table-container">
+        <table class="members-table">
+          <thead>
+            <tr>
+              <th onclick="window.sortMonitoresBy('nombre')" style="cursor: pointer; user-select: none;">Nombre y Apellidos <span id="sort-monitores-icon-nombre" class="sort-icon"><i class="fa-solid fa-sort"></i></span></th>
+              <th onclick="window.sortMonitoresBy('telefono')" style="cursor: pointer; user-select: none;">Teléfono <span id="sort-monitores-icon-telefono" class="sort-icon"><i class="fa-solid fa-sort"></i></span></th>
+              <th>Acciones</th>
+            </tr>
+          </thead>
+          <tbody id="table-monitores"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- ======================= -->
+    <!-- SECTION: SALAS          -->
+    <!-- ======================= -->
+    <section id="view-salas" class="view-section">
+      <div class="controls-bar">
+        <div class="search-box">
+          <i class="fa-solid fa-search search-icon"></i>
+          <input type="text" id="searchSalas" class="search-input" placeholder="Buscar salas...">
+        </div>
+        <button class="btn btn-primary" data-action="open-modal" data-col="salas">
+          <i class="fa-solid fa-plus"></i> Nueva Sala
+        </button>
+      </div>
+      <div class="table-container">
+        <table class="members-table">
+          <thead>
+            <tr>
+              <th onclick="window.sortSalasBy('nombre')" style="cursor: pointer; user-select: none;">Nombre de la Sala <span id="sort-salas-icon-nombre" class="sort-icon"><i class="fa-solid fa-sort"></i></span></th>
+              <th onclick="window.sortSalasBy('aforo')" style="cursor: pointer; user-select: none;">Aforo (Capacidad) <span id="sort-salas-icon-aforo" class="sort-icon"><i class="fa-solid fa-sort"></i></span></th>
+              <th>Acciones</th>
+            </tr>
+          </thead>
+          <tbody id="table-salas"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- ======================= -->
+    <!-- SECTION: TAQUERAS       -->
+    <!-- ======================= -->
+    <section id="view-taqueras" class="view-section">
+      <div class="controls-bar">
+        <div class="search-box">
+          <i class="fa-solid fa-search search-icon"></i>
+          <input type="text" id="searchTaqueras" class="search-input" placeholder="Buscar taqueras...">
+        </div>
+        <button class="btn btn-primary" data-action="open-modal" data-col="taqueras">
+          <i class="fa-solid fa-plus"></i> Nueva Taquera
+        </button>
+      </div>
+      <div class="table-container">
+        <table class="members-table">
+          <thead>
+            <tr>
+              <th onclick="window.sortTaquerasBy('numeroTaquera')" style="cursor: pointer; user-select: none;">Nº Taquera <span id="sort-taqueras-icon-numeroTaquera" class="sort-icon"><i class="fa-solid fa-sort"></i></span></th>
+              <th onclick="window.sortTaquerasBy('numeroSocio')" style="cursor: pointer; user-select: none;">Nº Socio <span id="sort-taqueras-icon-numeroSocio" class="sort-icon"><i class="fa-solid fa-sort"></i></span></th>
+              <th onclick="window.sortTaquerasBy('socio')" style="cursor: pointer; user-select: none;">Socio <span id="sort-taqueras-icon-socio" class="sort-icon"><i class="fa-solid fa-sort"></i></span></th>
+              <th onclick="window.sortTaquerasBy('telefono')" style="cursor: pointer; user-select: none;">Teléfono <span id="sort-taqueras-icon-telefono" class="sort-icon"><i class="fa-solid fa-sort"></i></span></th>
+              <th>Acciones</th>
+            </tr>
+          </thead>
+          <tbody id="table-taqueras"></tbody>
+        </table>
+      </div>
+      <div class="pagination-container" id="pagination-taqueras"></div>
+    </section>
+
+    <!-- ======================= -->
+    <!-- SECTION: INSCRIPCIONES  -->
+    <!-- ======================= -->
+    <section id="view-inscripciones" class="view-section">
+      <div class="controls-bar">
+        <div class="search-box">
+          <i class="fa-solid fa-search search-icon"></i>
+          <input type="text" id="searchInscripciones" class="search-input" placeholder="Buscar inscripciones...">
+        </div>
+        <button class="btn btn-primary" data-action="open-modal" data-col="inscripciones">
+          <i class="fa-solid fa-plus"></i> Nueva Inscripción
+        </button>
+      </div>
+      <div class="table-container">
+        <table class="members-table">
+          <thead>
+            <tr>
+              <th onclick="window.sortInscripcionesBy('numeroSocio')" style="cursor: pointer; user-select: none;">Nº Socio <span id="sort-inscripciones-icon-numeroSocio" class="sort-icon"><i class="fa-solid fa-sort"></i></span></th>
+              <th onclick="window.sortInscripcionesBy('socio')" style="cursor: pointer; user-select: none;">Socio <span id="sort-inscripciones-icon-socio" class="sort-icon"><i class="fa-solid fa-sort"></i></span></th>
+              <th onclick="window.sortInscripcionesBy('actividad')" style="cursor: pointer; user-select: none;">Actividad <span id="sort-inscripciones-icon-actividad" class="sort-icon"><i class="fa-solid fa-sort"></i></span></th>
+              <th onclick="window.sortInscripcionesBy('dia')" style="cursor: pointer; user-select: none;">Día <span id="sort-inscripciones-icon-dia" class="sort-icon"><i class="fa-solid fa-sort"></i></span></th>
+              <th onclick="window.sortInscripcionesBy('horario')" style="cursor: pointer; user-select: none;">Horario <span id="sort-inscripciones-icon-horario" class="sort-icon"><i class="fa-solid fa-sort"></i></span></th>
+              <th onclick="window.sortInscripcionesBy('estadoPago')" style="cursor: pointer; user-select: none;">Estado Pago <span id="sort-inscripciones-icon-estadoPago" class="sort-icon"><i class="fa-solid fa-sort"></i></span></th>
+              <th onclick="window.sortInscripcionesBy('estado')" style="cursor: pointer; user-select: none;">Estado Insc. <span id="sort-inscripciones-icon-estado" class="sort-icon"><i class="fa-solid fa-sort"></i></span></th>
+              <th>Acciones</th>
+            </tr>
+          </thead>
+          <tbody id="table-inscripciones"></tbody>
+        </table>
+      </div>
+      <div class="pagination-container" id="pagination-inscripciones"></div>
+    </section>
+
+    <!-- ======================= -->
+    <!-- SECTION: CUENTAS        -->
+    <!-- ======================= -->
+    <section id="view-cuentas" class="view-section">
+      <div class="controls-bar cuentas-controls">
+        <div class="search-box">
+          <i class="fa-solid fa-search search-icon"></i>
+          <input type="text" id="searchCuentas" class="search-input" placeholder="Buscar por concepto o grupo...">
+        </div>
+        
+        <div class="cuentas-summary-inline" style="display: flex; gap: 0.5rem; flex: 1; justify-content: center;">
+          <div class="summary-card success" style="flex: 1; min-width: 140px; background: #f0fdf4; border: 1px solid #bbf7d0; padding: 1rem; border-radius: 8px; display: flex; align-items: center; gap: 1rem;">
+            <div class="summary-icon" style="color: #22c55e; font-size: 1.5rem;"><i class="fa-solid fa-arrow-trend-up"></i></div>
+            <div class="summary-info" style="display: flex; flex-direction: column;">
+              <span class="summary-label" style="font-size: 0.8rem; color: #166534; font-weight: 600;">Ingresos</span>
+              <span class="summary-value" id="total-ingresos" style="font-size: 1.2rem; font-weight: 700; color: #15803d;">0.00 €</span>
+            </div>
+          </div>
+          <div class="summary-card danger" style="flex: 1; min-width: 140px; background: #fef2f2; border: 1px solid #fecaca; padding: 1rem; border-radius: 8px; display: flex; align-items: center; gap: 1rem;">
+            <div class="summary-icon" style="color: #ef4444; font-size: 1.5rem;"><i class="fa-solid fa-arrow-trend-down"></i></div>
+            <div class="summary-info" style="display: flex; flex-direction: column;">
+              <span class="summary-label" style="font-size: 0.8rem; color: #991b1b; font-weight: 600;">Gastos</span>
+              <span class="summary-value" id="total-gastos" style="font-size: 1.2rem; font-weight: 700; color: #b91c1c;">0.00 €</span>
+            </div>
+          </div>
+          <div class="summary-card info" style="flex: 1; min-width: 140px; background: #eff6ff; border: 1px solid #bfdbfe; padding: 1rem; border-radius: 8px; display: flex; align-items: center; gap: 1rem;">
+            <div class="summary-icon" style="color: #3b82f6; font-size: 1.5rem;"><i class="fa-solid fa-scale-balanced"></i></div>
+            <div class="summary-info" style="display: flex; flex-direction: column;">
+              <span class="summary-label" style="font-size: 0.8rem; color: #1e40af; font-weight: 600;">Balance</span>
+              <span class="summary-value" id="total-balance" style="font-size: 1.2rem; font-weight: 700; color: #1d4ed8;">0.00 €</span>
+            </div>
+          </div>
+        </div>
+
+        <button class="btn btn-primary" data-action="open-modal" data-col="cuentas">
+          <i class="fa-solid fa-plus"></i> Nuevo Apunte
+        </button>
+      </div>
+      <div class="table-container" style="min-height: 0; overflow-y: auto; margin-top: 1rem;">
+        <table class="members-table">
+          <thead>
+            <tr>
+              <th onclick="window.sortCuentasBy('fecha')" style="cursor: pointer; user-select: none;">Fecha <span id="sort-cuentas-icon-fecha" class="sort-icon"><i class="fa-solid fa-sort"></i></span></th>
+              <th onclick="window.sortCuentasBy('tipo')" style="cursor: pointer; user-select: none;">Tipo <span id="sort-cuentas-icon-tipo" class="sort-icon"><i class="fa-solid fa-sort"></i></span></th>
+              <th onclick="window.sortCuentasBy('grupo')" style="cursor: pointer; user-select: none;">Grupo <span id="sort-cuentas-icon-grupo" class="sort-icon"><i class="fa-solid fa-sort"></i></span></th>
+              <th onclick="window.sortCuentasBy('concepto')" style="cursor: pointer; user-select: none;">Concepto / Descripción <span id="sort-cuentas-icon-concepto" class="sort-icon"><i class="fa-solid fa-sort"></i></span></th>
+              <th onclick="window.sortCuentasBy('importe')" style="cursor: pointer; user-select: none; text-align: right;">Importe <span id="sort-cuentas-icon-importe" class="sort-icon"><i class="fa-solid fa-sort"></i></span></th>
+              <th>Acciones</th>
+            </tr>
+          </thead>
+          <tbody id="table-cuentas">
+            <tr>
+              <td colspan="6">
+                <div class="empty-state"><i class="fa-solid fa-circle-notch fa-spin empty-icon"></i>
+                  <p>Cargando datos...</p>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="pagination-container" id="pagination-cuentas"></div>
+    </section>
+
+    <!-- ======================= -->
+    <!-- SECTION: IMPORTAR CSV   -->
+    <!-- ======================= -->
+    <section id="view-importar" class="view-section">
+      <div class="welcome-header">
+        <h1>Configuración y Datos</h1>
+        <p>Ajustes del sistema, importación masiva y copias de seguridad</p>
+      </div>
+
+      <div class="menu-grid" style="margin-bottom: 2rem;">
+        <div class="menu-card" id="btn-backup-data" style="cursor: pointer;">
+          <i class="fa-solid fa-download" style="font-size: 2.5rem; color: #4a90e2; margin-bottom: 1rem; display: block; text-align: center;"></i>
+          <h3>Copia de Seguridad</h3>
+          <p>Descargar todos los datos a tu computadora (JSON)</p>
+        </div>
+
+        <div class="menu-card" onclick="document.getElementById('config-import-wrapper').style.display='block'; document.getElementById('config-cleanup-wrapper').style.display='none'; setTimeout(()=>document.getElementById('config-import-wrapper').scrollIntoView({behavior: 'smooth', block: 'start'}), 100);" style="cursor: pointer;">
+          <i class="fa-solid fa-file-import" style="font-size: 2.5rem; color: var(--primary); margin-bottom: 1rem; display: block; text-align: center;"></i>
+          <h3>Importar Datos</h3>
+          <p>Importación masiva desde Excel o CSV</p>
+        </div>
+
+        <div class="menu-card" onclick="document.getElementById('config-cleanup-wrapper').style.display='block'; document.getElementById('config-import-wrapper').style.display='none'; setTimeout(()=>document.getElementById('config-cleanup-wrapper').scrollIntoView({behavior: 'smooth', block: 'start'}), 100);" style="cursor: pointer;">
+          <i class="fa-solid fa-trash-can" style="font-size: 2.5rem; color: var(--danger-color, #ef4444); margin-bottom: 1rem; display: block; text-align: center;"></i>
+          <h3>Limpieza Histórica</h3>
+          <p>Eliminar permanentemente registros antiguos</p>
+        </div>
+      </div>
+
+      <div id="config-import-wrapper" style="display: none; padding-top: 1rem; border-top: 1px solid var(--border-light);">
+        <h2 style="margin-bottom: 1.5rem; font-size: 1.25rem;"><i class="fa-solid fa-file-import" style="color: var(--primary); margin-right: 0.5rem;"></i> Importador de Datos Inteligente</h2>
+
+        <div class="import-container">
+        <div class="import-instructions">
+          <h3><i class="fa-solid fa-circle-info"></i> Instrucciones</h3>
+          <ol>
+            <li>Selecciona el tipo de datos que deseas importar a la derecha.</li>
+            <li>Sube o arrastra tu archivo Excel (<code>.xlsx</code>, <code>.xls</code>) o <code>.csv</code>.</li>
+            <li>El sistema emparejará automáticamente las columnas. Si difieren, selecciónalas manualmente en el panel de mapeo.</li>
+            <li>Revisa la vista previa de datos para comprobar que todo está alineado.</li>
+            <li>Pulsa en <strong>Iniciar Importación</strong>.</li>
+          </ol>
+          <div class="field-guide" id="field-guide-display">
+            <!-- Dynamically updated -->
+          </div>
+        </div>
+
+        <div class="import-form-card">
+          <div class="form-group">
+            <label class="form-label">¿Qué quieres importar?</label>
+            <select id="import-collection-select" class="form-control" data-action="update-import-guide">
+              <option value="socios">Socios</option>
+              <option value="monitores">Monitores</option>
+              <option value="actividades">Actividades</option>
+              <option value="salas">Salas</option>
+              <option value="inscripciones">Inscripciones</option>
+              <option value="cuotas_pagos">Cuotas pagadas (últimos 3 años)</option>
+            </select>
+          </div>
+
+          <div class="form-group" id="import-update-existing-group" style="margin-top: -0.5rem; margin-bottom: 1.5rem;">
+            <label style="display: flex; align-items: center; gap: 0.5rem; font-size: 0.9rem; cursor: pointer;">
+              <input type="checkbox" id="import-update-existing" style="width: 1rem; height: 1rem;">
+              Actualizar registros si ya existen (por Número de Socio)
+            </label>
+            <p style="font-size: 0.8rem; color: var(--text-muted); margin-top: 0.25rem;">Si marcas esto y el socio ya existe, se sobrescribirán solo los campos que mapees (ej. Fecha de Nacimiento).</p>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Archivo de origen:</label>
+            <div class="import-dropzone" id="import-dropzone" onclick="document.getElementById('import-file-input').click()">
+              <input type="file" id="import-file-input" accept=".xlsx,.xls,.csv" style="display: none;">
+              <i class="fa-solid fa-file-excel dropzone-icon" style="font-size: 2.5rem; color: var(--primary); margin-bottom: 0.75rem;"></i>
+              <p class="dropzone-text" style="font-weight: 600; font-size: 0.95rem; color: var(--text-muted); margin: 0;">
+                Arrastra tu Excel o CSV aquí, o <span style="color: var(--primary); text-decoration: underline; cursor: pointer;">haz clic para seleccionarlo</span>
+              </p>
+            </div>
+            
+            <div class="selected-file-info" id="selected-file-info" style="display: none; align-items: center; justify-content: space-between; background: var(--bg-main); padding: 0.75rem 1rem; border-radius: var(--radius-sm); border: 2px solid var(--border-light); margin-top: 1rem;">
+              <span class="file-name" style="font-weight: 700; color: var(--text-main); font-size: 0.95rem;">
+                <i class="fa-solid fa-file-circle-check" style="color: var(--success); margin-right: 0.5rem;"></i> <span id="file-name-text">archivo.xlsx</span>
+              </span>
+              <button type="button" class="btn btn-outline btn-sm" data-action="clear-import-file" style="min-height: auto; padding: 4px 10px; font-size: 0.8rem; border-color: var(--danger); color: var(--danger);">
+                <i class="fa-solid fa-trash"></i> Quitar
+              </button>
+            </div>
+          </div>
+
+          <div class="form-group" id="sheet-select-group" style="display: none;">
+            <label class="form-label">Seleccionar Hoja de Trabajo:</label>
+            <select id="import-sheet-select" class="form-control" data-action="handle-sheet-select"></select>
+          </div>
+          <!-- Column mapping -->
+          <div id="import-mapping-section" style="display: none; margin-top: 1.5rem; border-top: 1px solid var(--border-light); padding-top: 1.25rem;">
+            <h3 style="font-size: 1.15rem; margin-bottom: 0.5rem; color: var(--primary); display: flex; align-items: center; gap: 0.5rem;">
+              <i class="fa-solid fa-shuffle"></i> Emparejar Columnas
+            </h3>
+            <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 1rem;">Asocia cada campo de la base de datos con una columna de tu archivo:</p>
+            <div id="import-mapping-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 0.6rem; margin-bottom: 1.5rem;">
+              <!-- Dynamic selectors -->
+            </div>
+          </div>
+
+          <!-- Preview -->
+          <div id="import-preview-section" style="display: none; margin-top: 1.5rem; border-top: 1px solid var(--border-light); padding-top: 1.25rem;">
+            <h3 style="font-size: 1.15rem; margin-bottom: 0.75rem; color: var(--primary); display: flex; align-items: center; gap: 0.5rem;">
+              <i class="fa-solid fa-eye"></i> Vista Previa (primeros 3 registros)
+            </h3>
+            <div class="table-container" style="max-height: 200px; margin-bottom: 1.25rem; border-radius: var(--radius-sm); border: 1.5px solid var(--border-light);">
+              <table class="members-table" style="font-size: 0.9rem;">
+                <thead id="import-preview-head"></thead>
+                <tbody id="import-preview-body"></tbody>
+              </table>
+            </div>
+          </div>
+
+          <div id="import-status" style="margin-bottom: 1.25rem; font-weight: 700; font-size: 0.95rem; min-height: 1.5em;"></div>
+
+          <button class="btn btn-primary btn-block" id="btn-start-import" data-action="execute-import" disabled style="opacity: 0.5; cursor: not-allowed; width: 100%;">
+            <i class="fa-solid fa-rocket"></i> Iniciar Importación Masiva
+          </button>
+        </div>
+      </div>
+
+      <!-- BOTON OCULTO DE RESTAURACIÓN -->
+      <div style="text-align: right; margin-top: 30px; opacity: 0.2; cursor: pointer; transition: opacity 0.3s;" id="btn-restore-data-hidden" onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.2'">
+        <i class="fa-solid fa-database"></i> Restaurar Copia de Seguridad
+      </div>
+      <input type="file" id="restore-file-input" accept=".json" style="display: none;">
+      </div>
+
+      <div id="config-cleanup-wrapper" style="display: none; padding-top: 1rem; border-top: 1px solid var(--border-light);">
+        <h2 style="margin-bottom: 1.5rem; font-size: 1.25rem; color: var(--danger-color, #ef4444);"><i class="fa-solid fa-trash-can" style="margin-right: 0.5rem;"></i> Limpieza de Datos Históricos</h2>
+        <div class="import-container" style="border: 2px solid #fecaca; background: #fef2f2;">
+        <div class="import-instructions" style="border-right-color: #fca5a5;">
+          <h3 style="color: #b91c1c;"><i class="fa-solid fa-triangle-exclamation"></i> ¡Atención!</h3>
+          <p style="color: #991b1b; font-size: 0.9rem; margin-bottom: 1rem;">Esta sección permite <strong>eliminar permanentemente</strong> registros de años anteriores.</p>
+          <ul style="color: #991b1b; font-size: 0.9rem; padding-left: 1.2rem; margin-bottom: 1rem;">
+            <li>Esta acción <strong>NO se puede deshacer</strong>.</li>
+            <li>Te recomendamos descargar una <strong>Copia de Seguridad</strong> (desde el panel de Inicio) antes de proceder.</li>
+          </ul>
+        </div>
+        <div class="import-form-card">
+          <div class="form-group">
+            <label class="form-label" style="color: #991b1b;">¿Qué datos deseas eliminar?</label>
+            <select id="cleanup-collection-select" class="form-control" style="border-color: #fca5a5; background: white;">
+              <option value="cuotas_pagos">Cuotas Pagadas</option>
+              <option value="asistencias">Asistencias a Actividades</option>
+              <option value="cuentas">Movimientos de Cuentas</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label" style="color: #991b1b;">Selecciona el Año:</label>
+            <select id="cleanup-year-select" class="form-control" style="border-color: #fca5a5; background: white;">
+              <!-- Se llenará dinámicamente -->
+            </select>
+          </div>
+          <button class="btn btn-danger btn-block" data-action="execute-cleanup" style="width: 100%; margin-top: 1rem;">
+            <i class="fa-solid fa-skull-crossbones"></i> Eliminar Registros Definitivamente
+          </button>
+        </div>
+      </div>
+      </div>
+    </section>
+
+    <!-- ======================= -->
+    <!-- SECTION: PASAR LISTA    -->
+    <!-- ======================= -->
+    <section id="view-pasar-lista" class="view-section">
+      <!-- 1. Monitor Selection and PIN Login inside the tab -->
+      <div id="attendance-login-view" class="attendance-login-container">
+        <!-- Profile Selection Step -->
+        <div id="attendance-profile-step" class="profile-selection-card">
+          <div class="logo-icon" style="margin: 0 auto 1.5rem; background: var(--primary);">
+            <i class="fa-solid fa-clipboard-user"></i>
+          </div>
+          <h2>Selecciona tu Perfil</h2>
+          <p style="color: var(--text-muted); margin-bottom: 2rem;">Elige tu nombre para acceder a la asistencia de tus actividades</p>
+          <div id="attendance-monitors-grid" class="monitors-profile-grid">
+            <!-- Dynamic monitor profiles injected here -->
+          </div>
+        </div>
+
+        <!-- PIN Pad Step -->
+        <div id="attendance-pin-step" class="profile-selection-card" style="display: none;">
+          <button type="button" class="btn btn-outline btn-sm" onclick="window.backToProfiles()" style="position: absolute; top: 1.5rem; left: 1.5rem; min-height: auto; padding: 5px 10px;">
+            <i class="fa-solid fa-arrow-left"></i> Volver
+          </button>
+          <div id="selected-monitor-avatar" class="logo-icon" style="margin: 0 auto 1rem; background: var(--primary);">
+            <i class="fa-solid fa-user"></i>
+          </div>
+          <h2 id="selected-monitor-name">Monitor</h2>
+          <p>Introduce tu PIN de 4 dígitos</p>
+          
+          <div class="pin-display" id="tab-pin-dots" style="justify-content: center; margin-bottom: 1.5rem;">
+            <div class="dot"></div>
+            <div class="dot"></div>
+            <div class="dot"></div>
+            <div class="dot"></div>
+          </div>
+
+          <div class="keypad">
+            <button type="button" onclick="window.typeTabPin('1')">1</button>
+            <button type="button" onclick="window.typeTabPin('2')">2</button>
+            <button type="button" onclick="window.typeTabPin('3')">3</button>
+            <button type="button" onclick="window.typeTabPin('4')">4</button>
+            <button type="button" onclick="window.typeTabPin('5')">5</button>
+            <button type="button" onclick="window.typeTabPin('6')">6</button>
+            <button type="button" onclick="window.typeTabPin('7')">7</button>
+            <button type="button" onclick="window.typeTabPin('8')">8</button>
+            <button type="button" onclick="window.typeTabPin('9')">9</button>
+            <button type="button" class="btn-clear" onclick="window.clearTabPin()"><i class="fa-solid fa-eraser"></i></button>
+            <button type="button" onclick="window.typeTabPin('0')">0</button>
+            <button type="button" class="btn-enter" onclick="window.submitTabPin()"><i class="fa-solid fa-check"></i></button>
+          </div>
+          <div id="tab-login-error" style="color: var(--danger-color); margin-top: 1rem; font-weight: 600; min-height: 1.5em;"></div>
+        </div>
+      </div>
+
+      <!-- 2. Attendance List Workspace (Visible when loggedMonitorId is set) -->
+      <div id="attendance-workspace-view" style="display: none;">
+        <div class="controls-bar" style="background: var(--primary-glow); padding: 1.5rem; border-radius: var(--radius-lg); border: 2px solid var(--border-light); margin-bottom: 2rem;">
+          <div style="display: flex; gap: 1.5rem; flex-wrap: wrap; align-items: center; justify-content: space-between; width: 100%;">
+            <div style="display: flex; gap: 1.5rem; flex-wrap: wrap; align-items: flex-end; flex: 1;">
+              <div class="form-group" style="margin-bottom: 0; flex: 1; min-width: 250px;">
+                <label class="form-label" style="color: var(--primary);">Selecciona la Actividad:</label>
+                <select id="attendance-select-activity" class="form-control" onchange="window.renderAttendanceView()">
+                  <option value="">-- Elige actividad --</option>
+                </select>
+              </div>
+              <div class="form-group" style="margin-bottom: 0; width: 180px;">
+                <label class="form-label" style="color: var(--primary);">Fecha:</label>
+                <input type="date" id="attendance-select-date" class="form-control" onchange="window.renderAttendanceView()">
+              </div>
+            </div>
+            <div style="display: flex; align-items: center; gap: 1rem; justify-content: flex-end;">
+              <span id="attendance-active-monitor-info" style="font-weight: 600; color: var(--text-main); font-size: 0.95rem;">
+                <i class="fa-solid fa-user-circle"></i> Monitor
+              </span>
+              <button type="button" class="btn btn-outline btn-sm" onclick="window.logoutMonitor()" style="border-color: #cbd5e1; min-height: auto; padding: 0.4rem 0.8rem; font-size: 0.85rem;">
+                <i class="fa-solid fa-right-from-bracket"></i> Cerrar Sesión
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div id="attendance-students-list" class="attendance-cards-grid">
+          <div class="empty-state">
+            <i class="fa-solid fa-hand-pointer empty-icon"></i>
+            <p>Selecciona una actividad para empezar a pasar lista.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ======================= -->
+    <!-- SECTION: INFORMES       -->
+    <!-- ======================= -->
+    <section id="view-informes" class="view-section">
+    <style>
+      .reports-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+        gap: 1rem;
+        margin-bottom: 1.5rem;
+      }
+      .report-card {
+        background: white;
+        border: 1px solid var(--border);
+        border-radius: var(--radius-md);
+        padding: 1.25rem;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+        gap: 0.5rem;
+      }
+      .report-card:hover {
+        border-color: var(--primary);
+        box-shadow: var(--shadow-sm);
+        transform: translateY(-2px);
+      }
+      .report-card.active {
+        border-color: var(--primary);
+        background: var(--primary-glow, #eef2ff);
+        box-shadow: 0 0 0 2px var(--primary);
+      }
+      .report-card .icon {
+        font-size: 2rem;
+        color: var(--primary);
+        margin-bottom: 0.25rem;
+      }
+      .report-card .title {
+        font-weight: 700;
+        color: var(--text-dark);
+        font-size: 1rem;
+      }
+      .report-card .desc {
+        font-size: 0.8rem;
+        color: var(--text-muted);
+        line-height: 1.3;
+      }
+    </style>
+
+    <script>
+      window.selectReportType = function(type) {
+        document.getElementById('report-type').value = type;
+        document.querySelectorAll('.report-card').forEach(card => card.classList.remove('active'));
+        document.querySelector(`.report-card[data-type="${type}"]`).classList.add('active');
+        if (window.updateReportFilters) {
+          window.updateReportFilters();
+        }
+      };
+    </script>
+
+    <input type="hidden" id="report-type" value="socios">
+
+    <div class="reports-grid" id="reports-grid">
+      <div class="report-card active" data-type="socios" onclick="window.selectReportType('socios')">
+        <div class="icon"><i class="fa-solid fa-users"></i></div>
+        <div class="title">Listado de Socios</div>
+        <div class="desc">Búsquedas y filtros por sexo y tiquet</div>
+      </div>
+      <div class="report-card" data-type="socios_80" onclick="window.selectReportType('socios_80')">
+        <div class="icon"><i class="fa-solid fa-cake-candles"></i></div>
+        <div class="title">Cumplen 80 años</div>
+        <div class="desc">Socios que cumplen 80 este año</div>
+      </div>
+      <div class="report-card" data-type="actividades" onclick="window.selectReportType('actividades')">
+        <div class="icon"><i class="fa-solid fa-person-running"></i></div>
+        <div class="title">Actividades</div>
+        <div class="desc">Asistencia y horarios por día</div>
+      </div>
+      <div class="report-card" data-type="inscripciones" onclick="window.selectReportType('inscripciones')">
+        <div class="icon"><i class="fa-solid fa-clipboard-list"></i></div>
+        <div class="title">Inscripciones</div>
+        <div class="desc">Listado de inscritos a actividades</div>
+      </div>
+      <div class="report-card" data-type="cuotas_pendientes" onclick="window.selectReportType('cuotas_pendientes')">
+        <div class="icon"><i class="fa-solid fa-hand-holding-dollar"></i></div>
+        <div class="title">Cuotas Pendientes</div>
+        <div class="desc">De los últimos 3 años</div>
+      </div>
+      <div class="report-card" data-type="actividades_morosos" onclick="window.selectReportType('actividades_morosos')">
+        <div class="icon"><i class="fa-solid fa-person-circle-exclamation"></i></div>
+        <div class="title">Actividades con Deuda</div>
+        <div class="desc">Impagos del año actual</div>
+      </div>
+      <div class="report-card" data-type="cuentas_resumen" onclick="window.selectReportType('cuentas_resumen')">
+        <div class="icon"><i class="fa-solid fa-chart-pie"></i></div>
+        <div class="title">Resumen Contable</div>
+        <div class="desc">Agrupado por categorías contables</div>
+      </div>
+      <div class="report-card" data-type="cuentas_detalle" onclick="window.selectReportType('cuentas_detalle')">
+        <div class="icon"><i class="fa-solid fa-file-invoice-dollar"></i></div>
+        <div class="title">Detalles Cuentas</div>
+        <div class="desc">Ingresos y Gastos al completo</div>
+      </div>
+      <div class="report-card" data-type="personalizado" onclick="window.selectReportType('personalizado')">
+        <div class="icon"><i class="fa-solid fa-sliders"></i></div>
+        <div class="title">Personalizado</div>
+        <div class="desc">Construye tu propio informe</div>
+      </div>
+    </div>
+
+    <div class="controls-bar" style="flex-direction: column; gap: 1rem; align-items: stretch;">
+      <div style="display: flex; gap: 1rem; flex-wrap: wrap; align-items: flex-end;">
+        <div id="dynamic-filters" style="display: flex; gap: 1rem; flex-wrap: wrap; flex: 1; align-items: flex-end;">
+            <!-- Dynamic filters -->
+          </div>
+          <div class="actions-group">
+            <button class="btn btn-outline" onclick="window.generateReport()"><i class="fa-solid fa-filter"></i> Generar</button>
+            <button class="btn btn-primary" onclick="window.printReport()"><i class="fa-solid fa-print"></i> Imprimir</button>
+            <button class="btn btn-success" onclick="window.exportReportToODS()"><i class="fa-solid fa-file-excel"></i> Exportar ODS</button>
+          </div>
+        </div>
+      </div>
+      <!-- Constructor de columnas personalizado (fuera del controls-bar para poder expandirse) -->
+      <div id="custom-builder-container" style="display:none; margin-bottom: 1.5rem;">
+        <div style="background: white; padding: 1.5rem; border-radius: var(--radius-md); border: 1px solid var(--border); box-shadow: var(--shadow-sm);">
+          <div style="font-size:0.8rem; font-weight:700; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.05em; margin-bottom:1rem;"><i class="fa-solid fa-sliders" style="margin-right:0.4rem;"></i>Constructor de Columnas</div>
+          <div style="display: flex; gap: 1.5rem;">
+            <div style="flex: 1;">
+              <div style="font-size: 0.85rem; font-weight: 600; color: var(--text-muted); margin-bottom: 0.5rem;"><i class="fa-solid fa-list" style="margin-right:0.4rem;"></i>Campos Disponibles</div>
+              <div id="custom-available-list" class="report-field-list"></div>
+            </div>
+            <div style="flex: 1;">
+              <div style="font-size: 0.85rem; font-weight: 600; color: var(--primary); margin-bottom: 0.5rem;"><i class="fa-solid fa-table-columns" style="margin-right:0.4rem;"></i>Columnas del Informe (en orden)</div>
+              <div id="custom-selected-list" class="report-field-list"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div id="report-results">
+        <div class="empty-state">
+          <i class="fa-solid fa-file-pdf empty-icon"></i>
+          <p>Selecciona el tipo de informe y pulsa Generar</p>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- ============================================== -->
+  <!-- MODALS                                         -->
+  <!-- ============================================== -->
+
+  <!-- Modal: Cuentas -->
+  <div class="modal-overlay" id="modal-cuentas">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2 class="modal-title" id="title-cuentas">Añadir Apunte</h2>
+        <button class="btn-close" onclick="window.closeModal('cuentas')">&times;</button>
+      </div>
+      <form id="form-cuentas" onsubmit="event.preventDefault();">
+        <div class="modal-body">
+          <input type="hidden" id="cuentas-id">
+          <div class="form-grid">
+            <div class="form-group">
+              <label class="form-label">Tipo *</label>
+              <select id="cuentas-tipo" class="form-control" required>
+                <option value="ingreso">Ingreso</option>
+                <option value="gasto">Gasto</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Fecha *</label>
+              <input type="date" id="cuentas-fecha" class="form-control" required>
+            </div>
+            <div class="form-group form-group-full">
+              <label class="form-label">Concepto / Descripción *</label>
+              <input type="text" id="cuentas-concepto" class="form-control" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Grupo (Agrupación anual) *</label>
+              <input type="text" id="cuentas-grupo" class="form-control" placeholder="Ej: Mantenimiento, Eventos..." required>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Importe (€) *</label>
+              <input type="number" id="cuentas-importe" class="form-control" step="0.01" min="0" required>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline" onclick="window.closeModal('cuentas')">Cancelar</button>
+          <button type="submit" class="btn btn-primary">Guardar Apunte</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal: Socios -->
+  <div class="modal-overlay" id="modal-socios">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2 class="modal-title" id="title-socios">Añadir Socio</h2>
+        <button class="btn-close" onclick="window.closeModal('socios')">&times;</button>
+      </div>
+      <form id="form-socios" onsubmit="event.preventDefault();">
+        <div class="modal-body">
+          <input type="hidden" id="socios-id">
+
+          <div class="form-grid">
+            <div class="form-group">
+              <label class="form-label">Número de Socio *</label>
+              <input type="text" id="socios-numeroSocio" class="form-control" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Nombre *</label>
+              <input type="text" id="socios-nombre" class="form-control" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Apellido 1 *</label>
+              <input type="text" id="socios-apellido1" class="form-control" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Apellido 2</label>
+              <input type="text" id="socios-apellido2" class="form-control">
+            </div>
+            <div class="form-group form-group-full">
+              <label class="form-label">Dirección</label>
+              <input type="text" id="socios-direccion" class="form-control">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Código Postal</label>
+              <input type="text" id="socios-codigoPostal" class="form-control">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Población</label>
+              <input type="text" id="socios-poblacion" class="form-control">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Teléfono</label>
+              <input type="text" id="socios-telefono" class="form-control">
+            </div>
+            <div class="form-group">
+              <label class="form-label">DNI / NIF *</label>
+              <input type="text" id="socios-dni" class="form-control" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Fecha de Nacimiento</label>
+              <input type="date" id="socios-fechaNacimiento" class="form-control">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Sexo *</label>
+              <select id="socios-sexo" class="form-control" required>
+                <option value="">-- Seleccionar --</option>
+                <option value="H">Hombre (H)</option>
+                <option value="M">Mujer (M)</option>
+              </select>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline" onclick="window.closeModal('socios')">Cancelar</button>
+          <button type="submit" class="btn btn-primary">Guardar Socio</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal: Actividades -->
+  <div class="modal-overlay" id="modal-actividades">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2 class="modal-title" id="title-actividades">Añadir Actividad</h2>
+        <button class="btn-close" onclick="window.closeModal('actividades')">&times;</button>
+      </div>
+      <form id="form-actividades" onsubmit="event.preventDefault();">
+        <div class="modal-body">
+          <input type="hidden" id="actividades-id">
+
+          <div class="form-grid">
+            <div class="form-group">
+              <label class="form-label">ID Actividad *</label>
+              <input type="text" id="actividades-codigo" class="form-control" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Nombre de la Actividad *</label>
+              <input type="text" id="actividades-nombre" class="form-control" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Día de la semana *</label>
+              <select id="actividades-dia" class="form-control" required>
+                <option value="Lunes">Lunes</option>
+                <option value="Martes">Martes</option>
+                <option value="Miércoles">Miércoles</option>
+                <option value="Jueves">Jueves</option>
+                <option value="Viernes">Viernes</option>
+                <option value="Sábado">Sábado</option>
+                <option value="Domingo">Domingo</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Horario *</label>
+              <input type="text" id="actividades-horario" class="form-control" placeholder="Ej: 17:00 - 18:00" required>
+            </div>
+            <!-- Select dropdowns to be populated dynamically -->
+            <div class="form-group">
+              <label class="form-label">Monitor *</label>
+              <select id="actividades-monitor" class="form-control" required></select>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Sala *</label>
+              <select id="actividades-sala" class="form-control" required></select>
+            </div>
+            <div class="form-group form-group-full">
+              <label class="form-label">Máximo de Socios *</label>
+              <input type="number" id="actividades-maxSocios" class="form-control" min="1" required>
+              <small class="text-muted">No puede superar el aforo de la sala.</small>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline" onclick="window.closeModal('actividades')">Cancelar</button>
+          <button type="submit" class="btn btn-primary">Guardar Actividad</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal: Monitores -->
+  <div class="modal-overlay" id="modal-monitores">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2 class="modal-title" id="title-monitores">Añadir Monitor</h2>
+        <button class="btn-close" onclick="window.closeModal('monitores')">&times;</button>
+      </div>
+      <form id="form-monitores" onsubmit="event.preventDefault();">
+        <div class="modal-body">
+          <input type="hidden" id="monitores-id">
+          <div class="form-grid">
+            <div class="form-group">
+              <label class="form-label">Nombre *</label>
+              <input type="text" id="monitores-nombre" class="form-control" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Apellido 1</label>
+              <input type="text" id="monitores-apellido1" class="form-control">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Apellido 2</label>
+              <input type="text" id="monitores-apellido2" class="form-control">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Teléfono</label>
+              <input type="text" id="monitores-telefono" class="form-control">
+            </div>
+            <div class="form-group form-group-full">
+              <label class="form-label">PIN de Acceso (4 dígitos) *</label>
+              <input type="text" id="monitores-pin" class="form-control" maxlength="4" placeholder="Ej: 1234" value="1234" required style="-webkit-text-security: disc;">
+              <small class="text-muted">Se usará para entrar desde el móvil.</small>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline" onclick="window.closeModal('monitores')">Cancelar</button>
+          <button type="submit" class="btn btn-primary">Guardar Monitor</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal: Salas -->
+  <div class="modal-overlay" id="modal-salas">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2 class="modal-title" id="title-salas">Añadir Sala</h2>
+        <button class="btn-close" onclick="window.closeModal('salas')">&times;</button>
+      </div>
+      <form id="form-salas" onsubmit="event.preventDefault();">
+        <div class="modal-body">
+          <input type="hidden" id="salas-id">
+          <div class="form-grid">
+            <div class="form-group">
+              <label class="form-label">Nombre de la Sala *</label>
+              <input type="text" id="salas-nombre" class="form-control" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Aforo (Capacidad) *</label>
+              <input type="number" id="salas-aforo" class="form-control" min="1" required>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline" onclick="window.closeModal('salas')">Cancelar</button>
+          <button type="submit" class="btn btn-primary">Guardar Sala</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal: Taqueras -->
+  <div class="modal-overlay" id="modal-taqueras">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2 class="modal-title" id="title-taqueras">Añadir Taquera</h2>
+        <button class="btn-close" onclick="window.closeModal('taqueras')">&times;</button>
+      </div>
+      <form id="form-taqueras" onsubmit="event.preventDefault();">
+        <div class="modal-body">
+          <input type="hidden" id="taqueras-id">
+          <div class="form-grid">
+            <div class="form-group form-group-full">
+              <label class="form-label">Número de Taquera *</label>
+              <input type="number" id="taqueras-numeroTaquera" class="form-control" required min="1">
+            </div>
+
+            <div class="form-group form-group-full" style="position: relative;">
+              <label class="form-label">Buscar y Asignar Socio *</label>
+              <input type="text" id="taqueras-socio-search" class="form-control"
+                placeholder="Buscar por nº socio, nombre, apellidos o teléfono..." 
+                oninput="window.filterSocioResultsForTaquera(this.value)">
+              <div id="taqueras-socio-search-results" class="search-results-container">
+                <!-- Results injected here -->
+              </div>
+              <input type="hidden" id="taqueras-socio" required>
+            </div>
+
+            <div class="form-group form-group-full">
+              <label class="form-label">Socio asignado</label>
+              <div id="taqueras-selected-socio-display" class="selected-item-box" style="padding: 1rem; background: #f8fafc; border: 1px solid var(--border-light); border-radius: var(--radius-sm); min-height: 60px;">
+                <span class="text-muted">Busca un socio para ver sus datos</span>
+              </div>
+            </div>
+
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline" onclick="window.closeModal('taqueras')">Cancelar</button>
+          <button type="submit" class="btn btn-primary">Guardar Taquera</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal: Inscripciones -->
+  <div class="modal-overlay" id="modal-inscripciones">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2 class="modal-title" id="title-inscripciones">Añadir Inscripción</h2>
+        <button class="btn-close" onclick="window.closeModal('inscripciones')">&times;</button>
+      </div>
+      <form id="form-inscripciones" onsubmit="event.preventDefault();">
+        <div class="modal-body">
+          <input type="hidden" id="inscripciones-id">
+          <div class="form-grid">
+            <div class="form-group">
+              <label class="form-label">Número de socio *</label>
+              <input type="text" id="inscripciones-numeroSocio" class="form-control" required
+                placeholder="Ej: 1234" inputmode="numeric"
+                onblur="window.lookupSocioByNumber()" onkeydown="if(event.key==='Enter'){event.preventDefault();window.lookupSocioByNumber();}">
+              <input type="hidden" id="inscripciones-socio">
+            </div>
+
+            <div class="form-group" style="position: relative;">
+              <label class="form-label">Buscar por nombre (opcional)</label>
+              <input type="text" id="socio-search-input" class="form-control"
+                placeholder="Nombre o apellidos..." oninput="window.filterSocioResults(this.value)">
+              <div id="socio-search-results" class="search-results-container">
+                <!-- Results will be injected here -->
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">Socio seleccionado</label>
+              <div id="selected-socio-display" class="selected-item-box">
+                <span class="text-muted">Introduce el número de socio y pulsa Tab o Enter</span>
+              </div>
+            </div>
+
+            <div class="form-group" id="inscripciones-ya-inscrito-group" style="display: none;">
+              <label class="form-label">Ya inscrito en</label>
+              <div id="inscripciones-ya-inscrito" class="inscripciones-ya-inscrito-box"></div>
+            </div>
+
+            <div class="form-group form-group-full" style="position: relative;">
+              <label class="form-label">Actividad *</label>
+              <input type="text" id="actividad-search-input" class="form-control" placeholder="Buscar por ID o descripción..." disabled oninput="window.filterActividadResults(this.value)" onfocus="window.filterActividadResults(this.value)" onblur="setTimeout(()=>window.lookupActividadByCode(), 150)" onkeydown="if(event.key==='Enter' || event.key==='Tab'){event.key==='Enter'&&event.preventDefault();window.lookupActividadByCode();}">
+              <div id="actividad-search-results" class="search-results-container"></div>
+              <input type="hidden" id="inscripciones-actividad" required>
+              <div id="selected-actividad-display" class="selected-item-box" style="margin-top: 0.5rem; display: none; padding: 0.6rem 1rem; min-height: 44px;">
+                <span class="text-muted">Ninguna</span>
+              </div>
+              <small class="text-muted" style="display: block; margin-top: 0.5rem;">Ordenadas por día y horario. Solo actividades sin inscripción previa.</small>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">Estado *</label>
+              <select id="inscripciones-estado" class="form-control" required>
+                <option value="Alta">Alta</option>
+                <option value="Baja Temporal">Baja Temporal</option>
+                <option value="Reserva">Reserva</option>
+              </select>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline" onclick="window.closeModal('inscripciones')">Cancelar</button>
+          <button type="submit" class="btn btn-primary">Guardar Inscripción</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Generic Delete Modal -->
+  <div class="modal-overlay" id="modal-delete">
+    <div class="modal-content" style="max-width: 400px;">
+      <div class="modal-header">
+        <h2 class="modal-title" style="color: var(--danger-color);">Confirmar Borrado</h2>
+      </div>
+      <div class="modal-body">
+        <p>¿Estás seguro de que deseas eliminar este registro (<strong id="delete-name"></strong>)?</p>
+        <p style="font-size: 0.85rem; color: var(--text-muted); margin-top: 0.5rem;">Esta acción no se puede deshacer.
+        </p>
+      </div>
+        <div class="modal-footer">
+          <input type="hidden" id="delete-id">
+          <input type="hidden" id="delete-collection">
+          <button type="button" class="btn btn-outline" onclick="window.closeDeleteModal()">Cancelar</button>
+          <button type="button" class="btn btn-primary" style="background-color: var(--danger-color);" onclick="window.executeDelete()">Eliminar</button>
+        </div>
+    </div>
+  </div>
+
+  <!-- Modal: Bulk Delete -->
+  <div class="modal-overlay" id="modal-bulk-delete">
+    <div class="modal-content" style="max-width: 420px;">
+      <div class="modal-header">
+        <h2 class="modal-title" style="color: var(--danger-color);"><i class="fa-solid fa-triangle-exclamation"></i> Confirmar Eliminación</h2>
+      </div>
+      <div class="modal-body">
+        <p>¿Estás seguro de que deseas eliminar los <strong id="bulk-delete-count"></strong> socios seleccionados?</p>
+        <p style="font-size: 0.85rem; color: var(--text-muted); margin-top: 0.5rem;">Esta acción eliminará de forma permanente los registros seleccionados de Firebase. No se puede deshacer.</p>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline" onclick="window.closeBulkDeleteModal()">Cancelar</button>
+        <button type="button" class="btn btn-danger" onclick="window.executeBulkDelete()">Eliminar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: Mobile Connect -->
+  <div class="modal-overlay" id="modal-mobile-connect">
+    <div class="modal-content" style="max-width: 450px; text-align: center;">
+      <div class="modal-header">
+        <h2 class="modal-title">Conectar Teléfono Móvil</h2>
+        <button class="btn-close" onclick="window.closeModal('mobile-connect')">&times;</button>
+      </div>
+      <div class="modal-body" style="padding: 2rem;">
+        <p style="margin-bottom: 1.5rem; color: var(--text-muted);">Escanea este QR con la cámara del móvil para entrar directamente al <strong>Modo Monitor</strong>.</p>
+        
+        <div id="qr-container" style="background: white; padding: 1rem; border-radius: 1rem; display: inline-block; box-shadow: var(--shadow-md); margin-bottom: 1.5rem;">
+          <!-- QR will be injected here -->
+        </div>
+
+        <div style="background: #f8fafc; padding: 1rem; border-radius: 0.5rem; font-family: monospace; font-size: 0.9rem; word-break: break-all; border: 1px solid var(--border); margin-bottom: 1rem;">
+          <div id="mobile-url-display"></div>
+        </div>
+
+        <div class="form-group" style="text-align: left; margin-bottom: 0;">
+          <label class="form-label" style="font-size: 0.8rem;">¿IP Incorrecta? Escríbela manualmente:</label>
+          <div class="input-with-button">
+            <input type="text" id="manual-ip-input" class="form-control" placeholder="Ej: 192.168.1.XX">
+            <button class="btn btn-primary btn-sm" onclick="window.updateManualIP()">
+              <i class="fa-solid fa-sync"></i>
+            </button>
+          </div>
+        </div>
+
+        <p style="margin-top: 1.5rem; font-size: 0.85rem; color: var(--text-muted);">
+          <i class="fa-solid fa-circle-info"></i> Asegúrate de que el móvil esté conectado al mismo <strong>WiFi</strong> que este ordenador.
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: Attendance Selection -->
+  <div class="modal-overlay" id="modal-attendance">
+    <div class="modal-content" style="max-width: 400px;">
+      <div class="modal-header">
+        <h2 class="modal-title">Imprimir Lista de Asistencia</h2>
+        <button class="btn-close" onclick="window.closeAttendanceModal()">&times;</button>
+      </div>
+      <div class="modal-body">
+        <input type="hidden" id="attendance-activity-id">
+        <div class="form-group">
+          <label class="form-label">Seleccionar Trimestre *</label>
+          <select id="attendance-quarter" class="form-control" onchange="window.updateAttendanceStartHint()">
+            <option value="1">1º Trimestre (Ene - Mar)</option>
+            <option value="2">2º Trimestre (Abr - Jun)</option>
+            <option value="3">3º Trimestre (Jul - Sep)</option>
+            <option value="4">4º Trimestre (Oct - Dic)</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Año</label>
+          <input type="number" id="attendance-year" class="form-control" value="2026">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Primer día de clase (Fecha)</label>
+          <input type="date" id="attendance-start-date" class="form-control">
+          <small style="color: var(--text-muted); font-size: 0.75rem;">Se usarán los siguientes 12 días correlativos que
+            coincidan con el día de la actividad.</small>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline" onclick="window.closeAttendanceModal()">Cancelar</button>
+        <button type="button" class="btn btn-primary" onclick="window.generateAttendanceList()">
+          <i class="fa-solid fa-print"></i> Generar y Abrir
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Hidden Container for Printing -->
+  <div id="print-area" style="display: none;"></div>
+
+  <script src="qrcode.min.js"></script>
+  <script src="local-ip.js"></script>
+  <script type="module" src="src/main.js"></script>
+</body>
+
+</html>
