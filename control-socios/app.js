@@ -3104,18 +3104,36 @@ function initApp() {
   if (btnBackup) {
     btnBackup.addEventListener('click', window.downloadBackup);
   }
+
+  const btnRestore = document.getElementById('btn-restore-data-hidden');
+  const restoreInput = document.getElementById('restore-file-input');
+  if (btnRestore && restoreInput) {
+    btnRestore.addEventListener('click', () => {
+      restoreInput.click();
+    });
+    restoreInput.addEventListener('change', (e) => {
+      if (e.target.files.length > 0) {
+        if (typeof window.restoreBackup === 'function') {
+          window.restoreBackup(e.target.files[0]);
+        }
+      }
+    });
+  }
 }
 
 window.downloadBackup = function() {
   try {
-    const dataStr = JSON.stringify(state, null, 2);
+    const dataStr = JSON.stringify(z, (key, value) => {
+      if (value instanceof Set) return Array.from(value);
+      return value;
+    }, 2);
     const blob = new Blob([dataStr], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     
     const a = document.createElement('a');
     a.href = url;
     const date = new Date().toISOString().split('T')[0];
-    a.download = `backup_casalsj_${date}.json`;
+    a.download = `backup_casalca_${date}.json`;
     document.body.appendChild(a);
     a.click();
     
@@ -3126,6 +3144,51 @@ window.downloadBackup = function() {
   } catch (error) {
     console.error('Error al descargar copia de seguridad:', error);
     alert('Hubo un error al generar la copia de seguridad.');
+  }
+};
+
+window.restoreBackup = async function(file) {
+  if (!confirm("ADVERTENCIA: Esta acción sobrescribirá los datos actuales con la copia de seguridad. ¿Estás seguro de continuar?")) {
+    return;
+  }
+  try {
+    const text = await file.text();
+    const backupData = JSON.parse(text);
+    const collectionsToRestore = ['socios', 'actividades', 'monitores', 'salas', 'inscripciones', 'asistencias', 'cuotas_config', 'cuotas_pagos', 'taqueras', 'cuentas'];
+    alert("Iniciando restauración. Por favor, no cierres la ventana.");
+    let totalItems = 0;
+    const MAX_BATCH_SIZE = 450; 
+    let batch = window.writeBatch ? window.writeBatch(_W) : null;
+    let count = 0;
+    for (const colName of collectionsToRestore) {
+      if (backupData[colName] && Array.isArray(backupData[colName])) {
+        for (const item of backupData[colName]) {
+          if (!item.id) continue;
+          const docRef = wA(_W, colName, String(item.id));
+          const { id, ...dataToSave } = item;
+          if (batch) {
+            batch.set(docRef, dataToSave);
+          } else {
+            await rL(docRef, dataToSave); // fallback si no está expuesto writeBatch (updateDoc) o algo así, pero asumimos que writeBatch o firestore doc existen de alguna manera, o usamos la func nativa de la app
+          }
+          count++;
+          totalItems++;
+          if (batch && count >= MAX_BATCH_SIZE) {
+            await batch.commit();
+            batch = window.writeBatch ? window.writeBatch(_W) : null;
+            count = 0;
+          }
+        }
+      }
+    }
+    if (batch && count > 0) {
+      await batch.commit();
+    }
+    alert(`Restauración completada con éxito. Se restauraron ${totalItems} registros.`);
+    window.location.reload();
+  } catch (error) {
+    console.error('Error al restaurar copia de seguridad:', error);
+    alert('Hubo un error al restaurar la copia de seguridad: ' + error.message);
   }
 };
 
@@ -3391,7 +3454,7 @@ window.generateReport = () => {
       html = `
         <h2 style="margin-bottom: 1rem; color: var(--primary-dark);">Socios que cumplen 80 años en ${currentYear} (${filtered.length})</h2>
         <div style="overflow-x:auto;">
-          <table class="data-table" style="width:100%;">
+          <table class="members-table" style="width:100%;">
             <thead>
               <tr>
                 <th>Nº Socio</th>

@@ -30,7 +30,7 @@ export function generateReport() {
       html = `
         <h2 style="margin-bottom: 1rem; color: var(--primary-dark);">Socios que cumplen 80 años en ${currentYear} (${filtered.length})</h2>
         <div style="overflow-x:auto;">
-          <table class="data-table" style="width:100%;">
+          <table class="members-table" style="width:100%;">
             <thead>
               <tr>
                 <th>Nº Socio</th>

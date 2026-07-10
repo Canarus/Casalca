@@ -26,6 +26,21 @@ function setupHeaderActions(env) {
     });
   }
 
+  const btnRestore = document.getElementById('btn-restore-data-hidden');
+  const restoreInput = document.getElementById('restore-file-input');
+  if (btnRestore && restoreInput) {
+    btnRestore.addEventListener('click', () => {
+      restoreInput.click();
+    });
+    restoreInput.addEventListener('change', (e) => {
+      if (e.target.files.length > 0) {
+        if (typeof window.restoreBackup === 'function') {
+          window.restoreBackup(e.target.files[0]);
+        }
+      }
+    });
+  }
+
   document.querySelectorAll('.font-toggle-btn').forEach(button => {
     const size = parseFloat(button.dataset.size);
     if (!Number.isNaN(size)) {

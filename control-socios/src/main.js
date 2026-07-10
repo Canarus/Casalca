@@ -58,7 +58,7 @@ window.downloadBackup = function() {
     const a = document.createElement('a');
     a.href = url;
     const date = new Date().toISOString().split('T')[0];
-    a.download = `backup_casalsj_${date}.json`;
+    a.download = `backup_casalca_${date}.json`;
     document.body.appendChild(a);
     a.click();
     
@@ -69,6 +69,47 @@ window.downloadBackup = function() {
   } catch (error) {
     console.error('Error al descargar copia de seguridad:', error);
     alert('Hubo un error al generar la copia de seguridad.');
+  }
+};
+
+window.restoreBackup = async function(file) {
+  if (!confirm("ADVERTENCIA: Esta acción sobrescribirá los datos actuales con la copia de seguridad. ¿Estás seguro de continuar?")) {
+    return;
+  }
+  try {
+    const text = await file.text();
+    const backupData = JSON.parse(text);
+    const collectionsToRestore = ['socios', 'actividades', 'monitores', 'salas', 'inscripciones', 'asistencias', 'cuotas_config', 'cuotas_pagos', 'taqueras', 'cuentas'];
+    alert("Iniciando restauración. Por favor, no cierres la ventana.");
+    let totalItems = 0;
+    const MAX_BATCH_SIZE = 450; 
+    let batch = writeBatch(db);
+    let count = 0;
+    for (const colName of collectionsToRestore) {
+      if (backupData[colName] && Array.isArray(backupData[colName])) {
+        for (const item of backupData[colName]) {
+          if (!item.id) continue;
+          const docRef = doc(db, colName, String(item.id));
+          const { id, ...dataToSave } = item;
+          batch.set(docRef, dataToSave);
+          count++;
+          totalItems++;
+          if (count >= MAX_BATCH_SIZE) {
+            await batch.commit();
+            batch = writeBatch(db);
+            count = 0;
+          }
+        }
+      }
+    }
+    if (count > 0) {
+      await batch.commit();
+    }
+    alert(`Restauración completada con éxito. Se restauraron ${totalItems} registros.`);
+    window.location.reload();
+  } catch (error) {
+    console.error('Error al restaurar copia de seguridad:', error);
+    alert('Hubo un error al restaurar la copia de seguridad: ' + error.message);
   }
 };
 
