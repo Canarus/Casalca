@@ -740,8 +740,8 @@
           <div style="display: flex; gap: 1.5rem; flex-wrap: wrap; align-items: center; justify-content: space-between; width: 100%;">
             <div style="display: flex; gap: 1.5rem; flex-wrap: wrap; align-items: flex-end; flex: 1;">
               <div class="form-group" style="margin-bottom: 0; flex: 1; min-width: 250px;">
-                <label class="form-label" style="color: var(--primary);">Selecciona la Actividad:</label>
-                <select id="attendance-select-activity" class="form-control" onchange="window.renderAttendanceView()">
+                <label class="form-label" style="color: var(--primary);">Selecciona la/s Actividad/es:</label>
+                <select id="attendance-select-activity" class="form-control" multiple onchange="window.renderAttendanceView()" style="min-height: 100px;">
                   <option value="">-- Elige actividad --</option>
                 </select>
               </div>
@@ -854,6 +854,11 @@
         <div class="icon"><i class="fa-solid fa-clipboard-list"></i></div>
         <div class="title">Inscripciones</div>
         <div class="desc">Listado de inscritos a actividades</div>
+      </div>
+      <div class="report-card" data-type="asistencias_estadisticas" onclick="window.selectReportType('asistencias_estadisticas')">
+        <div class="icon"><i class="fa-solid fa-chart-line"></i></div>
+        <div class="title">Estadísticas Asistencia</div>
+        <div class="desc">Por actividad, socio, monitor, fecha</div>
       </div>
       <div class="report-card" data-type="cuotas_pendientes" onclick="window.selectReportType('cuotas_pendientes')">
         <div class="icon"><i class="fa-solid fa-hand-holding-dollar"></i></div>
@@ -1126,6 +1131,13 @@
               <input type="text" id="monitores-telefono" class="form-control">
             </div>
             <div class="form-group form-group-full">
+              <label class="form-label">Tipo</label>
+              <select id="monitores-tipo" class="form-control" required>
+                <option value="Normal">Normal</option>
+                <option value="Administración">Administración</option>
+              </select>
+            </div>
+            <div class="form-group form-group-full">
               <label class="form-label">PIN de Acceso (4 dígitos) *</label>
               <input type="text" id="monitores-pin" class="form-control" maxlength="4" placeholder="Ej: 1234" value="1234" required style="-webkit-text-security: disc;">
               <small class="text-muted">Se usará para entrar desde el móvil.</small>
@@ -1333,23 +1345,6 @@
           <!-- QR will be injected here -->
         </div>
 
-        <div style="background: #f8fafc; padding: 1rem; border-radius: 0.5rem; font-family: monospace; font-size: 0.9rem; word-break: break-all; border: 1px solid var(--border); margin-bottom: 1rem;">
-          <div id="mobile-url-display"></div>
-        </div>
-
-        <div class="form-group" style="text-align: left; margin-bottom: 0;">
-          <label class="form-label" style="font-size: 0.8rem;">¿IP Incorrecta? Escríbela manualmente:</label>
-          <div class="input-with-button">
-            <input type="text" id="manual-ip-input" class="form-control" placeholder="Ej: 192.168.1.XX">
-            <button class="btn btn-primary btn-sm" onclick="window.updateManualIP()">
-              <i class="fa-solid fa-sync"></i>
-            </button>
-          </div>
-        </div>
-
-        <p style="margin-top: 1.5rem; font-size: 0.85rem; color: var(--text-muted);">
-          <i class="fa-solid fa-circle-info"></i> Asegúrate de que el móvil esté conectado al mismo <strong>WiFi</strong> que este ordenador.
-        </p>
       </div>
     </div>
   </div>

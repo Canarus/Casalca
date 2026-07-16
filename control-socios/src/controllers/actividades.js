@@ -79,6 +79,7 @@ export function editRecord(colName, id) {
     document.getElementById('monitores-apellido2').value = item.apellido2 || '';
     document.getElementById('monitores-telefono').value = item.telefono || '';
     document.getElementById('monitores-pin').value = item.pin || '';
+    document.getElementById('monitores-tipo').value = item.tipo || 'Normal';
   }
   else if (colName === 'salas') {
     document.getElementById('salas-nombre').value = item.nombre || '';

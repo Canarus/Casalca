@@ -180,6 +180,135 @@ export function generateReport() {
         </table>
       </div>
     `;
+  } else if (type === 'asistencias_estadisticas') {
+    const actId = document.getElementById('report-asist-actividad')?.value || '';
+    const monId = document.getElementById('report-asist-monitor')?.value || '';
+    const socioTerm = (document.getElementById('report-asist-socio')?.value || '').toLowerCase();
+    const estado = document.getElementById('report-asist-estado')?.value || '';
+    const desde = document.getElementById('report-asist-desde')?.value || '';
+    const hasta = document.getElementById('report-asist-hasta')?.value || '';
+
+    let filtered = state.asistencias.filter(a => {
+      let match = true;
+      if (actId && a.actividadId !== actId) match = false;
+      if (estado && a.estado !== estado) match = false;
+      if (desde && a.fecha < desde) match = false;
+      if (hasta && a.fecha > hasta) match = false;
+      
+      const act = state.actividades.find(ac => ac.id === a.actividadId);
+      if (monId && (!act || act.monitorId !== monId)) match = false;
+
+      if (socioTerm) {
+        const socio = maps.socios.get(a.socioId);
+        if (!socio) {
+          match = false;
+        } else {
+          const text = `${socio.numeroSocio || ''} ${socio.nombre || ''} ${socio.apellido1 || ''} ${socio.apellido2 || ''}`.toLowerCase();
+          if (!text.includes(socioTerm)) match = false;
+        }
+      }
+      return match;
+    });
+
+    // Sort by Date (desc)
+    filtered.sort((a, b) => {
+      if (a.fecha !== b.fecha) return (b.fecha || '').localeCompare(a.fecha || '');
+      return 0;
+    });
+
+    let countS = 0;
+    let countJ = 0;
+    let countN = 0;
+    filtered.forEach(a => {
+      if (a.estado === 'S') countS++;
+      else if (a.estado === 'J') countJ++;
+      else if (a.estado === 'N') countN++;
+    });
+    const totalCount = countS + countJ + countN;
+    const pctS = totalCount > 0 ? (countS / totalCount * 100).toFixed(1) : 0;
+    const pctJ = totalCount > 0 ? (countJ / totalCount * 100).toFixed(1) : 0;
+    const pctN = totalCount > 0 ? (countN / totalCount * 100).toFixed(1) : 0;
+
+    let chartHtml = '';
+    if (totalCount > 0) {
+      chartHtml = `
+        <div style="background: white; padding: 1.5rem; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); margin-bottom: 2rem;">
+          <h3 style="margin-bottom: 1rem; color: var(--text-dark); font-size: 1.1rem; display: flex; align-items: center; gap: 0.5rem;">
+            <i class="fa-solid fa-chart-pie" style="color: var(--primary);"></i> Resumen Global
+          </h3>
+          <div style="display: flex; gap: 1rem; margin-bottom: 1.5rem; flex-wrap: wrap;">
+            <div style="flex: 1; min-width: 120px; padding: 1rem; border-radius: 8px; background: #f0fdf4; border: 1px solid #bbf7d0; display: flex; flex-direction: column; align-items: center;">
+              <span style="font-size: 0.85rem; font-weight: 600; color: #166534; margin-bottom: 0.25rem;">Asistencias</span>
+              <span style="font-size: 1.5rem; font-weight: 700; color: #15803d;">${countS}</span>
+              <span style="font-size: 0.75rem; color: #166534; opacity: 0.8;">${pctS}%</span>
+            </div>
+            <div style="flex: 1; min-width: 120px; padding: 1rem; border-radius: 8px; background: #fffbeb; border: 1px solid #fde68a; display: flex; flex-direction: column; align-items: center;">
+              <span style="font-size: 0.85rem; font-weight: 600; color: #92400e; margin-bottom: 0.25rem;">Justificadas</span>
+              <span style="font-size: 1.5rem; font-weight: 700; color: #b45309;">${countJ}</span>
+              <span style="font-size: 0.75rem; color: #92400e; opacity: 0.8;">${pctJ}%</span>
+            </div>
+            <div style="flex: 1; min-width: 120px; padding: 1rem; border-radius: 8px; background: #fef2f2; border: 1px solid #fecaca; display: flex; flex-direction: column; align-items: center;">
+              <span style="font-size: 0.85rem; font-weight: 600; color: #991b1b; margin-bottom: 0.25rem;">Faltas</span>
+              <span style="font-size: 1.5rem; font-weight: 700; color: #b91c1c;">${countN}</span>
+              <span style="font-size: 0.75rem; color: #991b1b; opacity: 0.8;">${pctN}%</span>
+            </div>
+          </div>
+          
+          <div style="width: 100%; height: 24px; border-radius: 12px; overflow: hidden; display: flex; background: #e5e7eb; box-shadow: inset 0 1px 3px rgba(0,0,0,0.1);">
+            ${pctS > 0 ? `<div style="width: ${pctS}%; background: #22c55e; display: flex; align-items: center; justify-content: center; color: white; font-size: 0.75rem; font-weight: bold; transition: width 0.5s ease;" title="Asistencias: ${pctS}%"></div>` : ''}
+            ${pctJ > 0 ? `<div style="width: ${pctJ}%; background: #f59e0b; display: flex; align-items: center; justify-content: center; color: white; font-size: 0.75rem; font-weight: bold; transition: width 0.5s ease;" title="Justificadas: ${pctJ}%"></div>` : ''}
+            ${pctN > 0 ? `<div style="width: ${pctN}%; background: #ef4444; display: flex; align-items: center; justify-content: center; color: white; font-size: 0.75rem; font-weight: bold; transition: width 0.5s ease;" title="Faltas: ${pctN}%"></div>` : ''}
+          </div>
+        </div>
+      `;
+    }
+
+    html = `
+      <h2 style="margin-bottom: 1rem; color: var(--primary-dark);">Estadísticas de Asistencia (${filtered.length} registros)</h2>
+      ${chartHtml}
+      <div class="table-container">
+        <table class="members-table" style="width: 100%;">
+          <thead>
+            <tr>
+              <th>Fecha</th>
+              <th>Actividad</th>
+              <th>Monitor</th>
+              <th>Socio</th>
+              <th>Estado</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${filtered.map(a => {
+              const act = state.actividades.find(ac => ac.id === a.actividadId);
+              const monitor = act ? state.monitores.find(m => m.id === act.monitorId) : null;
+              const socio = maps.socios.get(a.socioId);
+              
+              let displayDate = a.fecha || '-';
+              if (displayDate.includes('-')) {
+                const parts = displayDate.split('-');
+                if (parts.length === 3) displayDate = `${parts[2]}/${parts[1]}/${parts[0]}`;
+              }
+
+              let statusBadge = '';
+              if (a.estado === 'S') statusBadge = '<span style="background: #dcfce7; color: #166534; padding: 0.25rem 0.5rem; border-radius: 999px; font-size: 0.75rem; font-weight: bold;">Viene</span>';
+              else if (a.estado === 'J') statusBadge = '<span style="background: #fef3c7; color: #92400e; padding: 0.25rem 0.5rem; border-radius: 999px; font-size: 0.75rem; font-weight: bold;">Justificada</span>';
+              else if (a.estado === 'N') statusBadge = '<span style="background: #fee2e2; color: #991b1b; padding: 0.25rem 0.5rem; border-radius: 999px; font-size: 0.75rem; font-weight: bold;">Falta</span>';
+
+              return `
+                <tr>
+                  <td>${displayDate}</td>
+                  <td>${act ? act.nombre : 'Desconocida'}</td>
+                  <td>${monitor ? monitor.nombre + ' ' + (monitor.apellido1 || '') : 'Desconocido'}</td>
+                  <td>${socio ? `${socio.numeroSocio || ''} - ${socio.nombre} ${socio.apellido1 || ''}` : 'Desconocido'}</td>
+                  <td>${statusBadge}</td>
+                </tr>
+              `;
+            }).join('')}
+            ${filtered.length === 0 ? '<tr><td colspan="5" style="text-align: center;">No hay resultados</td></tr>' : ''}
+          </tbody>
+        </table>
+      </div>
+    `;
   } else if (type === 'cuentas_resumen') {
     const year = document.getElementById('report-cuentas-year')?.value || '';
     

@@ -2889,16 +2889,14 @@ window.openMobileConnect = () => {
     host = '192.168.1.53'; // Very last fallback
   }
 
-  // Set input value if it exists
-  const manualInput = document.getElementById('manual-ip-input');
-  if (manualInput) manualInput.value = host;
+
 
   const port = window.location.port ? `:${window.location.port}` : '';
   const protocol = window.location.protocol || 'http:';
   const pathname = window.location.pathname || '/';
   const url = `${protocol}//${host}${port}${pathname}?mode=monitor`;
 
-  document.getElementById('mobile-url-display').textContent = url;
+
 
   // Clear container
   const container = document.getElementById('qr-container');
@@ -2937,13 +2935,7 @@ window.openMobileConnect = () => {
   document.getElementById('modal-mobile-connect').classList.add('active');
 };
 
-window.updateManualIP = () => {
-  const newIP = document.getElementById('manual-ip-input').value.trim();
-  if (newIP) {
-    localStorage.setItem('manual_ip', newIP);
-    window.openMobileConnect(); // Regenerate QR
-  }
-};
+
 
 window.renderAttendanceView = () => {
   const activityId = document.getElementById('attendance-select-activity').value;
@@ -3393,6 +3385,38 @@ window.updateReportFilters = () => {
         </select>
       </div>
     `;
+  } else if (type === 'asistencias_estadisticas') {
+    const acts = state.actividades.map(a => `<option value="${a.id}">${a.nombre}</option>`).join('');
+    const mons = state.monitores.map(m => `<option value="${m.id}">${m.nombre} ${m.apellidos || ''}</option>`).join('');
+    
+    container.innerHTML = `
+      <div class="form-group" style="margin-bottom: 0;">
+        <label class="form-label">Actividad</label>
+        <select id="report-asist-actividad" class="form-control">
+          <option value="">Todas</option>
+          ${acts}
+        </select>
+      </div>
+      <div class="form-group" style="margin-bottom: 0;">
+        <label class="form-label">Monitor</label>
+        <select id="report-asist-monitor" class="form-control">
+          <option value="">Todos</option>
+          ${mons}
+        </select>
+      </div>
+      <div class="form-group" style="margin-bottom: 0;">
+        <label class="form-label">Socio</label>
+        <input type="text" id="report-asist-socio" class="form-control" placeholder="Nombre, nº socio...">
+      </div>
+      <div class="form-group" style="margin-bottom: 0;">
+        <label class="form-label">Desde</label>
+        <input type="date" id="report-asist-desde" class="form-control">
+      </div>
+      <div class="form-group" style="margin-bottom: 0;">
+        <label class="form-label">Hasta</label>
+        <input type="date" id="report-asist-hasta" class="form-control">
+      </div>
+    `;
   } else if (type === 'personalizado') {
     // Ocultar builder si se cambia a otro tipo
     const builder = document.getElementById('custom-builder-container');
@@ -3596,6 +3620,79 @@ window.generateReport = () => {
                   <td>${act ? act.nombre : 'Desconocido'}</td>
                   <td>${i.fechaInscripcion ? new Date(i.fechaInscripcion).toLocaleDateString() : '-'}</td>
                   <td>${i.estado || '-'}</td>
+                </tr>
+              `;
+            }).join('')}
+            ${filtered.length === 0 ? '<tr><td colspan="4" style="text-align: center;">No hay resultados</td></tr>' : ''}
+          </tbody>
+        </table>
+      </div>
+    `;
+  } else if (type === 'asistencias_estadisticas') {
+    const actId = document.getElementById('report-asist-actividad')?.value || '';
+    const monId = document.getElementById('report-asist-monitor')?.value || '';
+    const socioTerm = (document.getElementById('report-asist-socio')?.value || '').toLowerCase();
+    const desde = document.getElementById('report-asist-desde')?.value || '';
+    const hasta = document.getElementById('report-asist-hasta')?.value || '';
+
+    let filtered = state.asistencias.filter(a => {
+      let match = true;
+      if (actId && a.actividadId !== actId) match = false;
+      if (desde && a.fecha < desde) match = false;
+      if (hasta && a.fecha > hasta) match = false;
+      
+      const act = state.actividades.find(ac => ac.id === a.actividadId);
+      if (monId && (!act || act.monitorId !== monId)) match = false;
+
+      if (socioTerm) {
+        const socio = sociosMap.get(a.socioId);
+        if (!socio) {
+          match = false;
+        } else {
+          const text = `${socio.numeroSocio || ''} ${socio.nombre || ''} ${socio.apellido1 || ''} ${socio.apellido2 || ''}`.toLowerCase();
+          if (!text.includes(socioTerm)) match = false;
+        }
+      }
+      return match;
+    });
+
+    // Sort by Date (desc)
+    filtered.sort((a, b) => {
+      if (a.fecha !== b.fecha) return (b.fecha || '').localeCompare(a.fecha || '');
+      return 0;
+    });
+
+    html = `
+      <h2 style="margin-bottom: 1rem; color: var(--primary-dark);">Estadísticas de Asistencia (${filtered.length} registros)</h2>
+      <div class="table-container">
+        <table class="members-table" style="width: 100%;">
+          <thead>
+            <tr>
+              <th>Fecha</th>
+              <th>Actividad</th>
+              <th>Monitor</th>
+              <th>Socio</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${filtered.map(a => {
+              const act = state.actividades.find(ac => ac.id === a.actividadId);
+              const monitor = act ? state.monitores.find(m => m.id === act.monitorId) : null;
+              const socio = sociosMap.get(a.socioId);
+              
+              // Helper para formatear YYYY-MM-DD a DD/MM/YYYY si a.fecha viene en YYYY-MM-DD
+              let displayDate = a.fecha || '-';
+              if (displayDate.includes('-')) {
+                const parts = displayDate.split('-');
+                if (parts.length === 3) displayDate = \`\${parts[2]}/\${parts[1]}/\${parts[0]}\`;
+              }
+
+              return `
+                <tr>
+                  <td>${displayDate}</td>
+                  <td>${act ? act.nombre : 'Desconocida'}</td>
+                  <td>${monitor ? monitor.nombre + ' ' + (monitor.apellidos || '') : 'Desconocido'}</td>
+                  <td>${socio ? `${socio.numeroSocio || ''} - ${socio.nombre} ${socio.apellido1 || ''}` : 'Desconocido'}</td>
                 </tr>
               `;
             }).join('')}

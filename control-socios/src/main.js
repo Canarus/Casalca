@@ -882,17 +882,25 @@ export function updateSelectDropdowns() {
   // Update Attendance Activity Select
   const attSel = document.getElementById('attendance-select-activity');
   if (attSel) {
-    const val = attSel.value;
+    const selectedOptions = Array.from(attSel.selectedOptions).map(opt => opt.value);
     let activitiesToShow = state.actividades;
 
     // Restriction for monitors
     if (state.loggedMonitorId) {
-      activitiesToShow = state.actividades.filter(a => a.monitorId === state.loggedMonitorId);
+      const monitor = state.monitores.find(m => m.id === state.loggedMonitorId);
+      if (monitor && monitor.tipo !== 'Administración') {
+        activitiesToShow = state.actividades.filter(a => a.monitorId === state.loggedMonitorId);
+      }
     }
 
     attSel.innerHTML = '<option value="">-- Elige actividad --</option>' +
       activitiesToShow.map(a => `<option value="${a.id}">${a.nombre} (${a.dia} ${a.horario || ''})</option>`).join('');
-    attSel.value = val;
+      
+    Array.from(attSel.options).forEach(opt => {
+      if (selectedOptions.includes(opt.value)) {
+        opt.selected = true;
+      }
+    });
   }
 
   // Refresh in-tab monitor profiles grid if the view is active
@@ -1233,6 +1241,7 @@ window.openModal = (colName) => {
 
   if (colName === 'monitores') {
     document.getElementById('monitores-pin').value = '1234';
+    document.getElementById('monitores-tipo').value = 'Normal';
   }
 
   if (colName === 'inscripciones') {
@@ -1340,7 +1349,8 @@ window.closeModal = (colName) => {
         apellido1: document.getElementById('monitores-apellido1').value,
         apellido2: document.getElementById('monitores-apellido2').value,
         telefono: document.getElementById('monitores-telefono').value,
-        pin: document.getElementById('monitores-pin').value
+        pin: document.getElementById('monitores-pin').value,
+        tipo: document.getElementById('monitores-tipo').value
       };
     }
     else if (colName === 'salas') {
@@ -1825,16 +1835,14 @@ window.openMobileConnect = () => {
     host = '192.168.1.53'; // Very last fallback
   }
 
-  // Set input value if it exists
-  const manualInput = document.getElementById('manual-ip-input');
-  if (manualInput) manualInput.value = host;
+
 
   const port = window.location.port ? `:${window.location.port}` : '';
   const protocol = window.location.protocol || 'http:';
   const pathname = window.location.pathname || '/';
   const url = `${protocol}//${host}${port}${pathname}?mode=monitor`;
 
-  document.getElementById('mobile-url-display').textContent = url;
+
 
   // Clear container
   const container = document.getElementById('qr-container');
@@ -1873,67 +1881,74 @@ window.openMobileConnect = () => {
   document.getElementById('modal-mobile-connect').classList.add('active');
 };
 
-window.updateManualIP = () => {
-  const newIP = document.getElementById('manual-ip-input').value.trim();
-  if (newIP) {
-    localStorage.setItem('manual_ip', newIP);
-    window.openMobileConnect(); // Regenerate QR
-  }
-};
+
 
 window.renderAttendanceView = () => {
-  const activityId = document.getElementById('attendance-select-activity').value;
+  const attSel = document.getElementById('attendance-select-activity');
+  const selectedActivityIds = Array.from(attSel.selectedOptions).map(opt => opt.value).filter(val => val !== "");
   const date = document.getElementById('attendance-select-date').value;
   const container = document.getElementById('attendance-students-list');
 
-  if (!activityId || !date) {
+  if (selectedActivityIds.length === 0 || !date) {
     container.innerHTML = `<div class="empty-state"><i class="fa-solid fa-hand-pointer empty-icon"></i><p>Selecciona actividad y fecha para empezar.</p></div>`;
     return;
   }
 
-  // Security: Check if monitor owns this activity
-  if (state.loggedMonitorId) {
+  let htmlResult = '';
+  const monitor = state.loggedMonitorId ? state.monitores.find(m => m.id === state.loggedMonitorId) : null;
+  const isAdministration = monitor && monitor.tipo === 'Administración';
+
+  for (const activityId of selectedActivityIds) {
     const act = state.actividades.find(a => a.id === activityId);
-    if (!act || act.monitorId !== state.loggedMonitorId) {
-      container.innerHTML = `<div class="empty-state"><i class="fa-solid fa-shield-halved empty-icon"></i><p>No tienes permiso para ver esta actividad.</p></div>`;
-      return;
+    if (!act) continue;
+
+    // Security: Check if monitor owns this activity or is Admin
+    if (state.loggedMonitorId && !isAdministration) {
+      if (act.monitorId !== state.loggedMonitorId) {
+        htmlResult += `<div class="empty-state"><i class="fa-solid fa-shield-halved empty-icon"></i><p>No tienes permiso para ver la actividad ${act.nombre}.</p></div>`;
+        continue;
+      }
     }
-  }
 
-  const inscritos = state.inscripciones.filter(i => i.actividadId === activityId && i.estado === 'Alta');
+    const inscritos = state.inscripciones.filter(i => i.actividadId === activityId && i.estado === 'Alta');
 
-  if (inscritos.length === 0) {
-    container.innerHTML = `<div class="empty-state"><i class="fa-solid fa-user-slash empty-icon"></i><p>No hay alumnos inscritos en esta actividad.</p></div>`;
-    return;
-  }
+    if (inscritos.length === 0) {
+      htmlResult += `<div class="empty-state"><i class="fa-solid fa-user-slash empty-icon"></i><p>No hay alumnos inscritos en ${act.nombre}.</p></div>`;
+      continue;
+    }
 
-  container.innerHTML = inscritos.map(ins => {
-    const socio = maps.socios.get(ins.socioId);
-    if (!socio) return '';
+    htmlResult += `<h3 style="margin-top: 1.5rem; margin-bottom: 0.5rem; font-size: 1.1rem; color: var(--primary); padding-bottom: 0.25rem; border-bottom: 2px solid var(--border-light);"><i class="fa-solid fa-calendar-check" style="margin-right: 0.5rem;"></i>${act.nombre} (${act.dia} ${act.horario || ''})</h3>`;
 
-    const asist = maps.asistencias.get(`${activityId}_${ins.socioId}_${date}`);
-    const status = asist ? asist.estado : '';
+    htmlResult += inscritos.map(ins => {
+      const socio = maps.socios.get(ins.socioId);
+      if (!socio) return '';
 
-    return `
-      <div class="attendance-card">
-        <div class="student-info">
-          <div class="student-num">${socio.numeroSocio}</div>
-          <div class="student-name">${socio.nombre} ${socio.apellido1}</div>
+      const asist = maps.asistencias.get(`${activityId}_${ins.socioId}_${date}`);
+      const status = asist ? asist.estado : '';
+
+      return `
+        <div class="attendance-card">
+          <div class="student-info">
+            <div class="student-num">${socio.numeroSocio}</div>
+            <div class="student-name">${socio.nombre} ${socio.apellido1}</div>
+          </div>
+          <div class="attendance-actions">
+            <button class="attendance-btn ${status === 'S' ? 'active-S' : ''}" data-action="mark-attendance" data-activity-id="${activityId}" data-socio-id="${socio.id}" data-date="${date}" data-status="S">
+              S <span>Viene</span>
+            </button>
+            <button class="attendance-btn ${status === 'J' ? 'active-J' : ''}" data-action="mark-attendance" data-activity-id="${activityId}" data-socio-id="${socio.id}" data-date="${date}" data-status="J">
+              J <span>Justif.</span>
+            </button>
+            <button class="attendance-btn ${status === 'N' ? 'active-N' : ''}" data-action="mark-attendance" data-activity-id="${activityId}" data-socio-id="${socio.id}" data-date="${date}" data-status="N">
+              N <span>Falta</span>
+            </button>
+          </div>
         </div>
-        <div class="attendance-actions">
-          <button class="attendance-btn ${status === 'S' ? 'active-S' : ''}" data-action="mark-attendance" data-activity-id="${activityId}" data-socio-id="${socio.id}" data-date="${date}" data-status="S">
-            S <span>Viene</span>
-          </button>
-          <button class="attendance-btn ${status === 'J' ? 'active-J' : ''}" data-action="mark-attendance" data-activity-id="${activityId}" data-socio-id="${socio.id}" data-date="${date}" data-status="J">
-            J <span>Justif.</span>
-          </button>
-          <button class="attendance-btn ${status === 'N' ? 'active-N' : ''}" data-action="mark-attendance" data-activity-id="${activityId}" data-socio-id="${socio.id}" data-date="${date}" data-status="N">
-            N <span>Falta</span>
-          </button>
-        </div>
-      </div>
-    `;
-  }).join('');
+      `;
+    }).join('');
+  }
+  
+  container.innerHTML = htmlResult;
 };
 
 
@@ -2190,6 +2205,47 @@ window.updateReportFilters = () => {
           <option value="Baja Temporal">Baja Temporal</option>
           <option value="Reserva">Reserva</option>
         </select>
+      </div>
+    `;
+  } else if (type === 'asistencias_estadisticas') {
+    const acts = state.actividades.map(a => `<option value="${a.id}">${a.nombre}</option>`).join('');
+    const mons = state.monitores.map(m => `<option value="${m.id}">${m.nombre} ${m.apellido1 || ''}</option>`).join('');
+    
+    container.innerHTML = `
+      <div class="form-group" style="margin-bottom: 0;">
+        <label class="form-label">Actividad</label>
+        <select id="report-asist-actividad" class="form-control">
+          <option value="">Todas</option>
+          ${acts}
+        </select>
+      </div>
+      <div class="form-group" style="margin-bottom: 0;">
+        <label class="form-label">Monitor</label>
+        <select id="report-asist-monitor" class="form-control">
+          <option value="">Todos</option>
+          ${mons}
+        </select>
+      </div>
+      <div class="form-group" style="margin-bottom: 0;">
+        <label class="form-label">Socio</label>
+        <input type="text" id="report-asist-socio" class="form-control" placeholder="Nombre, nº socio...">
+      </div>
+      <div class="form-group" style="margin-bottom: 0;">
+        <label class="form-label">Estado</label>
+        <select id="report-asist-estado" class="form-control">
+          <option value="">Todos</option>
+          <option value="S">Viene</option>
+          <option value="J">Justificada</option>
+          <option value="N">Falta</option>
+        </select>
+      </div>
+      <div class="form-group" style="margin-bottom: 0;">
+        <label class="form-label">Desde</label>
+        <input type="date" id="report-asist-desde" class="form-control">
+      </div>
+      <div class="form-group" style="margin-bottom: 0;">
+        <label class="form-label">Hasta</label>
+        <input type="date" id="report-asist-hasta" class="form-control">
       </div>
     `;
   } else if (type === 'personalizado') {
