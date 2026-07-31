@@ -30,7 +30,7 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <!-- SheetJS to read excel and csv files in client side -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-  <script type="module" crossorigin src="/assets/index-BisZNeYc.js"></script>
+  <script type="module" crossorigin src="/assets/index-DQMUFxb-.js"></script>
   <link rel="stylesheet" crossorigin href="/assets/index-CFUni-tJ.css">
 </head>
 
@@ -1094,6 +1094,18 @@
               <input type="number" id="actividades-maxSocios" class="form-control" min="1" required>
               <small class="text-muted">No puede superar el aforo de la sala.</small>
             </div>
+            <div class="form-group">
+              <label class="form-label">Precio T1 (Oct-Dic) *</label>
+              <input type="number" id="actividades-precioT1" class="form-control" min="0" step="0.01" value="0" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Precio T2 (Ene-Mar) *</label>
+              <input type="number" id="actividades-precioT2" class="form-control" min="0" step="0.01" value="0" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Precio T3 (Abr-Jun) *</label>
+              <input type="number" id="actividades-precioT3" class="form-control" min="0" step="0.01" value="0" required>
+            </div>
           </div>
         </div>
         <div class="modal-footer">
@@ -1284,6 +1296,55 @@
                 <option value="Baja Temporal">Baja Temporal</option>
                 <option value="Reserva">Reserva</option>
               </select>
+            </div>
+
+            <!-- Sección de Pagos Trimestrales (Solo visible para inscripciones con precio) -->
+            <div class="form-group form-group-full" id="inscripciones-pagos-container" style="display: none; border-top: 1px solid var(--border); padding-top: 1rem; margin-top: 1rem;">
+              <h3 style="margin-bottom: 1rem; font-size: 1rem; color: var(--primary);">Control de Pagos Trimestrales</h3>
+              
+              <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem;">
+                <!-- T1 -->
+                <div style="background: var(--surface); padding: 1rem; border-radius: 0.5rem; border: 1px solid var(--border);">
+                  <label class="form-label" style="font-weight: bold;">1º Trimestre (Oct-Dic)</label>
+                  <div style="margin-bottom: 0.5rem;">
+                    <span id="pago-T1-estado" style="display: inline-block; padding: 0.2rem 0.5rem; border-radius: 1rem; font-size: 0.8rem; font-weight: bold; margin-bottom: 0.5rem;">Pendiente</span>
+                  </div>
+                  <label class="form-label" style="font-size: 0.8rem;">Importe Cobrado (€)</label>
+                  <input type="number" id="inscripciones-pago-T1-importe" class="form-control" step="0.01" style="margin-bottom: 0.5rem;" oninput="if(window.actualizarBotonesPago) window.actualizarBotonesPago('T1')">
+                  <div style="display: flex; gap: 0.5rem;">
+                    <button type="button" id="btn-pago-T1" class="btn btn-primary" style="flex: 1; padding: 0.4rem; font-size: 0.85rem;" onclick="window.marcarPago('T1')">Cobrar</button>
+                    <button type="button" id="btn-anular-T1" class="btn btn-outline" style="flex: 1; padding: 0.4rem; font-size: 0.85rem; color: #dc3545; border-color: #dc3545;" onclick="window.anularPago('T1')">Anular</button>
+                  </div>
+                </div>
+
+                <!-- T2 -->
+                <div style="background: var(--surface); padding: 1rem; border-radius: 0.5rem; border: 1px solid var(--border);">
+                  <label class="form-label" style="font-weight: bold;">2º Trimestre (Ene-Mar)</label>
+                  <div style="margin-bottom: 0.5rem;">
+                    <span id="pago-T2-estado" style="display: inline-block; padding: 0.2rem 0.5rem; border-radius: 1rem; font-size: 0.8rem; font-weight: bold; margin-bottom: 0.5rem;">Pendiente</span>
+                  </div>
+                  <label class="form-label" style="font-size: 0.8rem;">Importe Cobrado (€)</label>
+                  <input type="number" id="inscripciones-pago-T2-importe" class="form-control" step="0.01" style="margin-bottom: 0.5rem;" oninput="if(window.actualizarBotonesPago) window.actualizarBotonesPago('T2')">
+                  <div style="display: flex; gap: 0.5rem;">
+                    <button type="button" id="btn-pago-T2" class="btn btn-primary" style="flex: 1; padding: 0.4rem; font-size: 0.85rem;" onclick="window.marcarPago('T2')">Cobrar</button>
+                    <button type="button" id="btn-anular-T2" class="btn btn-outline" style="flex: 1; padding: 0.4rem; font-size: 0.85rem; color: #dc3545; border-color: #dc3545;" onclick="window.anularPago('T2')">Anular</button>
+                  </div>
+                </div>
+
+                <!-- T3 -->
+                <div style="background: var(--surface); padding: 1rem; border-radius: 0.5rem; border: 1px solid var(--border);">
+                  <label class="form-label" style="font-weight: bold;">3º Trimestre (Abr-Jun)</label>
+                  <div style="margin-bottom: 0.5rem;">
+                    <span id="pago-T3-estado" style="display: inline-block; padding: 0.2rem 0.5rem; border-radius: 1rem; font-size: 0.8rem; font-weight: bold; margin-bottom: 0.5rem;">Pendiente</span>
+                  </div>
+                  <label class="form-label" style="font-size: 0.8rem;">Importe Cobrado (€)</label>
+                  <input type="number" id="inscripciones-pago-T3-importe" class="form-control" step="0.01" style="margin-bottom: 0.5rem;" oninput="if(window.actualizarBotonesPago) window.actualizarBotonesPago('T3')">
+                  <div style="display: flex; gap: 0.5rem;">
+                    <button type="button" id="btn-pago-T3" class="btn btn-primary" style="flex: 1; padding: 0.4rem; font-size: 0.85rem;" onclick="window.marcarPago('T3')">Cobrar</button>
+                    <button type="button" id="btn-anular-T3" class="btn btn-outline" style="flex: 1; padding: 0.4rem; font-size: 0.85rem; color: #dc3545; border-color: #dc3545;" onclick="window.anularPago('T3')">Anular</button>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         </div>

@@ -72,6 +72,9 @@ export function editRecord(colName, id) {
     document.getElementById('actividades-monitor').value = item.monitorId || '';
     document.getElementById('actividades-sala').value = item.salaId || '';
     document.getElementById('actividades-maxSocios').value = item.maxSocios || '';
+    document.getElementById('actividades-precioT1').value = item.precioT1 || 0;
+    document.getElementById('actividades-precioT2').value = item.precioT2 || 0;
+    document.getElementById('actividades-precioT3').value = item.precioT3 || 0;
   }
   else if (colName === 'monitores') {
     document.getElementById('monitores-nombre').value = item.nombre || '';
@@ -87,6 +90,7 @@ export function editRecord(colName, id) {
   }
   else if (colName === 'inscripciones') {
     document.getElementById('inscripciones-estado').value = item.estado || 'Alta';
+    window.currentInscripcionEdit = item;
 
     const socio = state.socios.find(s => s.id === item.socioId);
     if (socio) {

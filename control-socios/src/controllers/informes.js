@@ -578,9 +578,58 @@ export function generateReport() {
         extraTitle = ` - Año ${yearFilter}`;
       }
     }
+    
+    if (col === 'inscripciones') {
+      const actFilter = document.getElementById('report-custom-inscripciones-actividad')?.value;
+      if (actFilter) {
+        rawData = rawData.filter(ins => ins.actividadId === actFilter);
+      }
+      
+      const trFilter = document.getElementById('report-custom-inscripciones-trimestre')?.value;
+      if (trFilter) {
+        const parts = trFilter.split('-');
+        const t = parts[0];
+        const st = parts[1];
+        rawData = rawData.filter(ins => {
+          const act = state.actividades.find(a => a.id === ins.actividadId);
+          const pt = ins.pagosTrimestrales || {};
+          
+          if (t === 'ANY') {
+            return ['T1', 'T2', 'T3'].some(trim => {
+              let p = act ? act['precio' + trim] : 0;
+              if (typeof p === 'string') p = p.replace(',', '.');
+              const hasPrice = parseFloat(p) > 0;
+              if (st === 'pend' && !hasPrice) return false;
+              
+              const isPagado = pt[trim] && pt[trim].pagado;
+              if (st === 'pend' && isPagado) return false;
+              if (st === 'pagado' && !isPagado) return false;
+              return true;
+            });
+          } else {
+            let p = act ? act['precio' + t] : 0;
+            if (typeof p === 'string') p = p.replace(',', '.');
+            const hasPrice = parseFloat(p) > 0;
+            if (st === 'pend' && !hasPrice) return false;
+            
+            const isPagado = pt[t] && pt[t].pagado;
+            if (st === 'pend' && isPagado) return false;
+            if (st === 'pagado' && !isPagado) return false;
+            return true;
+          }
+        });
+      }
+    }
 
     let mappedData = rawData.map(item => {
       let row = { ...item };
+      
+      const parsePrice = (p) => {
+         if (!p) return 0;
+         if (typeof p === 'string') p = p.replace(',', '.');
+         return parseFloat(p) || 0;
+      };
+
       if (col === 'socios') {
         const age = calculateAge(item.fechaNacimiento);
         const isExempt = age !== null && age >= 90;
@@ -599,9 +648,26 @@ export function generateReport() {
         row.sala = getSalaName(item.salaId);
       } else if (col === 'inscripciones') {
         const socio = maps.socios.get(item.socioId);
+        const act = state.actividades.find(a => a.id === item.actividadId);
+        const pt = item.pagosTrimestrales || {};
+        
         row.socio = socio ? `${socio.nombre} ${socio.apellido1}` : '-';
         row.numeroSocio = socio ? socio.numeroSocio : '-';
         row.actividad = getActividadName(item.actividadId);
+        
+        const hasPriceT1 = act && (parsePrice(act.precioT1) > 0);
+        const hasPriceT2 = act && (parsePrice(act.precioT2) > 0);
+        const hasPriceT3 = act && (parsePrice(act.precioT3) > 0);
+        
+        row.importeT1 = (pt.T1 && pt.T1.pagado) ? pt.T1.importeCobrado : ((pt.T1 && pt.T1.importeCobrado) || (hasPriceT1 ? 0 : ''));
+        row.estadoT1 = (pt.T1 && pt.T1.pagado) ? 'Pagado' : (hasPriceT1 ? 'Pendiente' : '-');
+        
+        row.importeT2 = (pt.T2 && pt.T2.pagado) ? pt.T2.importeCobrado : ((pt.T2 && pt.T2.importeCobrado) || (hasPriceT2 ? 0 : ''));
+        row.estadoT2 = (pt.T2 && pt.T2.pagado) ? 'Pagado' : (hasPriceT2 ? 'Pendiente' : '-');
+        
+        row.importeT3 = (pt.T3 && pt.T3.pagado) ? pt.T3.importeCobrado : ((pt.T3 && pt.T3.importeCobrado) || (hasPriceT3 ? 0 : ''));
+        row.estadoT3 = (pt.T3 && pt.T3.pagado) ? 'Pagado' : (hasPriceT3 ? 'Pendiente' : '-');
+        
       } else if (col === 'taqueras') {
         const socio = maps.socios.get(item.socioId);
         row.socio = socio ? `${socio.nombre} ${socio.apellido1}` : '-';
@@ -632,6 +698,27 @@ export function generateReport() {
       });
     } else if (type === 'actividades_morosos') {
       mappedData = mappedData.filter(row => row.cuota_actual === 'Pendiente');
+    }
+
+    // Filtrar actividades gratuitas si se seleccionan columnas de importe
+    if (col === 'inscripciones') {
+      const hasPaymentCols = window.customReportSelected.some(f => 
+        ['importeT1', 'estadoT1', 'importeT2', 'estadoT2', 'importeT3', 'estadoT3'].includes(f.id)
+      );
+      if (hasPaymentCols) {
+        mappedData = mappedData.filter(row => {
+          const act = state.actividades.find(a => a.id === row.actividadId);
+          const parsePrice = (p) => {
+             if (!p) return 0;
+             if (typeof p === 'string') p = p.replace(',', '.');
+             return parseFloat(p) || 0;
+          };
+          const p1 = parsePrice(act?.precioT1);
+          const p2 = parsePrice(act?.precioT2);
+          const p3 = parsePrice(act?.precioT3);
+          return (p1 > 0) || (p2 > 0) || (p3 > 0);
+        });
+      }
     }
 
     // Filtro de texto libre (busca en las columnas elegidas)
@@ -708,9 +795,9 @@ export function generateReport() {
                     let alignStyle = '';
                     if (f.id === 'fechaNacimiento' || f.id === 'fecha') {
                       val = formatDateToDMY(val).replace(/\//g, '-');
-                    } else if (f.id === 'importe') {
+                    } else if (f.id === 'importe' || f.id === 'importeT1' || f.id === 'importeT2' || f.id === 'importeT3') {
                       alignStyle = 'text-align: right;';
-                      if (!isNaN(parseFloat(val))) val = formatCurrency(val);
+                      if (val !== '' && val !== '-' && !isNaN(parseFloat(val))) val = formatCurrency(val) + ' €';
                     } else {
                       if (val === undefined || val === null || val === '') val = '-';
                       if (typeof val === 'boolean') val = val ? 'Sí' : 'No';
@@ -719,6 +806,62 @@ export function generateReport() {
                   }).join('')}
                 </tr>`).join('')
             }
+            ${(() => {
+              if (col !== 'inscripciones' || mappedData.length === 0) return '';
+              const paymentCols = ['importeT1', 'importeT2', 'importeT3'];
+              const activePaymentCols = window.customReportSelected.filter(f => paymentCols.includes(f.id));
+              if (activePaymentCols.length === 0) return '';
+              
+              let grandTotals = { importeT1: 0, importeT2: 0, importeT3: 0 };
+              let actSubtotals = {};
+              
+              mappedData.forEach(row => {
+                const actName = row.actividad || 'Sin Actividad';
+                if (!actSubtotals[actName]) {
+                  actSubtotals[actName] = { importeT1: 0, importeT2: 0, importeT3: 0 };
+                }
+                activePaymentCols.forEach(c => {
+                  const estadoId = c.id.replace('importe', 'estado');
+                  const isPagado = String(row[estadoId]).trim().toLowerCase() === 'pagado';
+                  if (isPagado) {
+                    const val = parseFloat(row[c.id]) || 0;
+                    grandTotals[c.id] += val;
+                    actSubtotals[actName][c.id] += val;
+                  }
+                });
+              });
+              
+              let htmlTotals = `<tr style="background-color: #f1f5f9; font-weight: bold;"><td colspan="${window.customReportSelected.length}" style="padding-top: 1.5rem; padding-bottom: 0.5rem; border-bottom: 2px solid #cbd5e1;">SUBTOTALES POR ACTIVIDAD</td></tr>`;
+              
+              for (const [actName, totals] of Object.entries(actSubtotals)) {
+                htmlTotals += `<tr>`;
+                window.customReportSelected.forEach((f, index) => {
+                  if (index === 0) {
+                     htmlTotals += `<td>${actName}</td>`;
+                  } else if (paymentCols.includes(f.id)) {
+                     htmlTotals += `<td style="text-align: right; font-weight: 500;">${formatCurrency(totals[f.id])} €</td>`;
+                  } else {
+                     htmlTotals += `<td></td>`;
+                  }
+                });
+                htmlTotals += `</tr>`;
+              }
+              
+              htmlTotals += `<tr style="background-color: #e2e8f0; font-weight: bold;"><td colspan="${window.customReportSelected.length}" style="padding-top: 1.5rem; padding-bottom: 0.5rem; border-bottom: 2px solid #94a3b8;">TOTAL GENERAL</td></tr>`;
+              htmlTotals += `<tr style="font-weight: bold; font-size: 1.1em; background-color: #f8fafc;">`;
+              window.customReportSelected.forEach((f, index) => {
+                if (index === 0) {
+                   htmlTotals += `<td>Total Recaudado</td>`;
+                } else if (paymentCols.includes(f.id)) {
+                   htmlTotals += `<td style="text-align: right; color: var(--primary-dark);">${formatCurrency(grandTotals[f.id])} €</td>`;
+                } else {
+                   htmlTotals += `<td></td>`;
+                }
+              });
+              htmlTotals += `</tr>`;
+              
+              return htmlTotals;
+            })()}
           </tbody>
         </table>
       </div>
@@ -811,6 +954,9 @@ export function initCustomReport() {
   if (container) container.style.display = 'block';
   
   const yearContainer = document.getElementById('report-custom-cuentas-year-container');
+  const trimContainer = document.getElementById('report-custom-inscripciones-trimestre-container');
+  const actContainer = document.getElementById('report-custom-inscripciones-actividad-container');
+  
   if (col === 'cuentas') {
     if (yearContainer) {
       yearContainer.style.display = 'block';
@@ -822,6 +968,21 @@ export function initCustomReport() {
     }
   } else {
     if (yearContainer) yearContainer.style.display = 'none';
+  }
+  
+  if (col === 'inscripciones') {
+    if (trimContainer) trimContainer.style.display = 'block';
+    if (actContainer) {
+      actContainer.style.display = 'block';
+      const selectAct = document.getElementById('report-custom-inscripciones-actividad');
+      if (selectAct) {
+        const acts = state.actividades.map(a => `<option value="${a.id}">${a.nombre}</option>`).join('');
+        selectAct.innerHTML = '<option value="">Todas</option>' + acts;
+      }
+    }
+  } else {
+    if (trimContainer) trimContainer.style.display = 'none';
+    if (actContainer) actContainer.style.display = 'none';
   }
 
   window.customReportAvailable = [...window.CUSTOM_REPORT_DICT[col]];

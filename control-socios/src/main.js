@@ -822,6 +822,18 @@ window.selectActividadForInscription = function(id) {
     resultsContainer.innerHTML = '';
     resultsContainer.classList.remove('active');
   }
+
+  const parsePrice = p => typeof p === 'string' ? parseFloat(p.replace(',', '.')) : parseFloat(p);
+  const hasPrice = (parsePrice(a.precioT1) > 0) || (parsePrice(a.precioT2) > 0) || (parsePrice(a.precioT3) > 0);
+  const pagosContainer = document.getElementById('inscripciones-pagos-container');
+  if (pagosContainer) {
+    if (hasPrice) {
+      pagosContainer.style.display = 'block';
+      if (window.initPagosUI) window.initPagosUI(a, window.currentInscripcionEdit);
+    } else {
+      pagosContainer.style.display = 'none';
+    }
+  }
 };
 
 window.clearSelectedActividad = function() {
@@ -1329,7 +1341,10 @@ window.closeModal = (colName) => {
         horario: document.getElementById('actividades-horario').value,
         monitorId: document.getElementById('actividades-monitor').value,
         salaId: salaId,
-        maxSocios: maxSocios
+        maxSocios: maxSocios,
+        precioT1: document.getElementById('actividades-precioT1') ? parseFloat(document.getElementById('actividades-precioT1').value) || 0 : 0,
+        precioT2: document.getElementById('actividades-precioT2') ? parseFloat(document.getElementById('actividades-precioT2').value) || 0 : 0,
+        precioT3: document.getElementById('actividades-precioT3') ? parseFloat(document.getElementById('actividades-precioT3').value) || 0 : 0
       };
     }
     else if (colName === 'monitores') {
@@ -1426,6 +1441,18 @@ window.closeModal = (colName) => {
       
       if (!id) {
         data.fechaInscripcion = new Date().toISOString();
+      }
+      
+      const pagosContainer = document.getElementById('inscripciones-pagos-container');
+      if (pagosContainer && pagosContainer.style.display !== 'none') {
+        const pt = {};
+        ['T1', 'T2', 'T3'].forEach(t => {
+           const badge = document.getElementById('pago-' + t + '-estado');
+           const isPagado = badge ? badge.textContent === 'Pagado' : false;
+           const importe = parseFloat(document.getElementById('inscripciones-pago-' + t + '-importe')?.value) || 0;
+           pt[t] = { pagado: isPagado, importeCobrado: importe };
+        });
+        data.pagosTrimestrales = pt;
       }
     }
     else if (colName === 'taqueras') {
@@ -2082,7 +2109,13 @@ window.CUSTOM_REPORT_DICT = {
     { id: 'numeroSocio', label: 'Nº Socio' },
     { id: 'socio', label: 'Nombre Socio' },
     { id: 'actividad', label: 'Actividad' },
-    { id: 'estado', label: 'Estado' }
+    { id: 'estado', label: 'Estado' },
+    { id: 'importeT1', label: 'Importe T1' },
+    { id: 'estadoT1', label: 'Estado T1' },
+    { id: 'importeT2', label: 'Importe T2' },
+    { id: 'estadoT2', label: 'Estado T2' },
+    { id: 'importeT3', label: 'Importe T3' },
+    { id: 'estadoT3', label: 'Estado T3' }
   ],
   taqueras: [
     { id: 'numeroTaquera', label: 'Nº Taquera' },
@@ -2263,6 +2296,26 @@ window.updateReportFilters = () => {
           <option value="inscripciones">Inscripciones</option>
           <option value="taqueras">Taqueras</option>
           <option value="cuentas">Cuentas</option>
+        </select>
+      </div>
+      <div id="report-custom-inscripciones-actividad-container" class="form-group" style="display:none; margin-bottom: 0; flex: 1; min-width: 150px;">
+        <label class="form-label">Actividad</label>
+        <select id="report-custom-inscripciones-actividad" class="form-control">
+          <option value="">Todas</option>
+        </select>
+      </div>
+      <div id="report-custom-inscripciones-trimestre-container" class="form-group" style="display:none; margin-bottom: 0; flex: 1; min-width: 150px;">
+        <label class="form-label">Trimestre</label>
+        <select id="report-custom-inscripciones-trimestre" class="form-control">
+          <option value="">Todos</option>
+          <option value="ANY-pend">Cualquier Trimestre Pendiente</option>
+          <option value="ANY-pagado">Cualquier Trimestre Pagado</option>
+          <option value="T1-pend">T1 Pendiente</option>
+          <option value="T1-pagado">T1 Pagado</option>
+          <option value="T2-pend">T2 Pendiente</option>
+          <option value="T2-pagado">T2 Pagado</option>
+          <option value="T3-pend">T3 Pendiente</option>
+          <option value="T3-pagado">T3 Pagado</option>
         </select>
       </div>
       <div id="report-custom-cuentas-year-container" class="form-group" style="display:none; margin-bottom: 0; flex: 1; min-width: 150px;">
@@ -3099,4 +3152,64 @@ window.exportReportToODS = () => {
   
   // Write to ODS and download
   XLSX.writeFile(wb, "informe.ods");
+};
+
+window.initPagosUI = function(actividad, inscripcion) {
+  const parsePrice = p => typeof p === 'string' ? parseFloat(p.replace(',', '.')) : parseFloat(p);
+  const pt = (inscripcion && inscripcion.pagosTrimestrales) ? inscripcion.pagosTrimestrales : {};
+  
+  ['T1', 'T2', 'T3'].forEach(t => {
+    const defaultPrice = parsePrice(actividad['precio' + t]) || 0;
+    const block = pt[t] || {};
+    
+    const importeInput = document.getElementById('inscripciones-pago-' + t + '-importe');
+    if (importeInput) importeInput.value = block.importeCobrado !== undefined ? block.importeCobrado : defaultPrice;
+    
+    const isPagado = !!block.pagado;
+    
+    const estadoBadge = document.getElementById('pago-' + t + '-estado');
+    if (estadoBadge) {
+      if (defaultPrice > 0 || isPagado) {
+         estadoBadge.textContent = isPagado ? 'Pagado' : 'Pendiente';
+         estadoBadge.style.backgroundColor = isPagado ? '#d1e7dd' : '#f8d7da';
+         estadoBadge.style.color = isPagado ? '#0f5132' : '#842029';
+      } else {
+         estadoBadge.textContent = 'Gratis';
+         estadoBadge.style.backgroundColor = '#e2e3e5';
+         estadoBadge.style.color = '#41464c';
+         if (importeInput) importeInput.value = 0;
+      }
+    }
+    
+    const btnCobrar = document.getElementById('btn-pago-' + t);
+    const btnAnular = document.getElementById('btn-anular-' + t);
+    if (btnCobrar) btnCobrar.style.display = isPagado ? 'none' : 'block';
+    if (btnAnular) btnAnular.style.display = isPagado ? 'block' : 'none';
+  });
+};
+
+window.marcarPago = function(t) {
+  const estadoBadge = document.getElementById('pago-' + t + '-estado');
+  const btnCobrar = document.getElementById('btn-pago-' + t);
+  const btnAnular = document.getElementById('btn-anular-' + t);
+  if (estadoBadge) {
+    estadoBadge.textContent = 'Pagado';
+    estadoBadge.style.backgroundColor = '#d1e7dd';
+    estadoBadge.style.color = '#0f5132';
+  }
+  if (btnCobrar) btnCobrar.style.display = 'none';
+  if (btnAnular) btnAnular.style.display = 'block';
+};
+
+window.anularPago = function(t) {
+  const estadoBadge = document.getElementById('pago-' + t + '-estado');
+  const btnCobrar = document.getElementById('btn-pago-' + t);
+  const btnAnular = document.getElementById('btn-anular-' + t);
+  if (estadoBadge) {
+    estadoBadge.textContent = 'Pendiente';
+    estadoBadge.style.backgroundColor = '#f8d7da';
+    estadoBadge.style.color = '#842029';
+  }
+  if (btnCobrar) btnCobrar.style.display = 'block';
+  if (btnAnular) btnAnular.style.display = 'none';
 };
