@@ -1267,6 +1267,12 @@ window.openModal = (colName) => {
     if (searchInput) searchInput.value = '';
   }
 
+  if (colName === 'taqueras') {
+    if (typeof window.clearSocioForTaquera === 'function') {
+      window.clearSocioForTaquera();
+    }
+  }
+
   document.getElementById(`modal-${colName}`).classList.add('active');
   
   // Foco en el primer campo de entrada
@@ -1461,6 +1467,12 @@ window.closeModal = (colName) => {
       
       if (!numeroTaquera) {
         alert('El número de taquera es obligatorio.');
+        return;
+      }
+
+      const existingTaquera = state.taqueras.find(t => t.numeroTaquera === numeroTaquera && t.id !== id);
+      if (existingTaquera) {
+        alert('Ese número de taquera ya está asignado.');
         return;
       }
       

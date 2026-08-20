@@ -30,8 +30,8 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <!-- SheetJS to read excel and csv files in client side -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-  <script type="module" crossorigin src="/assets/index-DQMUFxb-.js"></script>
-  <link rel="stylesheet" crossorigin href="/assets/index-CFUni-tJ.css">
+  <script type="module" crossorigin src="/assets/index-C3YdBfSb.js"></script>
+  <link rel="stylesheet" crossorigin href="/assets/index-WR2IVpOQ.css">
 </head>
 
 <body>
@@ -108,6 +108,7 @@
     <div class="nav-tab" data-target="view-taqueras"><i class="fa-solid fa-box-archive"></i> Taqueras</div>
     <div class="nav-tab" data-target="view-cuentas"><i class="fa-solid fa-money-bill-wave"></i> Cuentas</div>
     <div class="nav-tab" data-target="view-informes"><i class="fa-solid fa-file-pdf"></i> Informes</div>
+    <div class="nav-tab" data-target="view-estadisticas" style="color: var(--primary); font-weight: 600;"><i class="fa-solid fa-chart-pie"></i> Estadísticas</div>
   </nav>
 
   <main class="container fade-in">
@@ -176,6 +177,12 @@
           <img src="/assets/icon_informes-BQ2vvaz1.png" alt="Informes" class="card-icon-img">
           <h3>Informes</h3>
           <p>Generación e impresión de listados</p>
+        </div>
+
+        <div class="menu-card" data-target="view-estadisticas">
+          <div style="font-size: 2.8rem; color: #6366f1; margin-bottom: 0.8rem;"><i class="fa-solid fa-chart-pie"></i></div>
+          <h3>Estadísticas</h3>
+          <p>Gráficas y visualización de datos</p>
         </div>
       </div>
     </section>
@@ -517,6 +524,63 @@
     </section>
 
     <!-- ======================= -->
+    <!-- SECTION: ESTADISTICAS   -->
+    <!-- ======================= -->
+    <section id="view-estadisticas" class="view-section" style="padding-top: 1rem;">
+      <div class="stats-tabs" style="display: flex; gap: 0.5rem; margin-bottom: 1.5rem; flex-wrap: wrap;">
+        <button class="btn btn-outline btn-sm active" data-tab="stats-genero">Género</button>
+        <button class="btn btn-outline btn-sm" data-tab="stats-edades">Edades</button>
+        <button class="btn btn-outline btn-sm" data-tab="stats-cuotas">Cuotas</button>
+        <button class="btn btn-outline btn-sm" data-tab="stats-actividades">Actividades</button>
+        <button class="btn btn-outline btn-sm" data-tab="stats-evolucion">Evolución</button>
+        <button class="btn btn-primary btn-sm" id="btn-refresh-stats" style="margin-left: auto;">
+          <i class="fa-solid fa-rotate-right"></i> Actualizar
+        </button>
+      </div>
+
+      <div class="stats-content-wrapper" style="background: white; border-radius: var(--radius-lg); padding: 1.5rem; box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1); border: 1px solid var(--border-light); min-height: 400px; display: flex; flex-direction: column; align-items: center; justify-content: center;">
+        
+        <!-- Tab: Género -->
+        <div id="stats-genero" class="stats-tab-content active" style="width: 100%; max-width: 600px; height: 100%;">
+          <h3 style="text-align: center; color: var(--primary); margin-bottom: 1rem;">Socios por Género</h3>
+          <canvas id="chart-genero"></canvas>
+        </div>
+
+        <!-- Tab: Edades -->
+        <div id="stats-edades" class="stats-tab-content" style="display: none; width: 100%; max-width: 600px; height: 100%;">
+          <h3 style="text-align: center; color: var(--primary); margin-bottom: 1rem;">Distribución de Edades</h3>
+          <canvas id="chart-edades"></canvas>
+        </div>
+
+        <!-- Tab: Cuotas -->
+        <div id="stats-cuotas" class="stats-tab-content" style="display: none; width: 100%; max-width: 800px; height: 100%;">
+          <h3 style="text-align: center; color: var(--primary); margin-bottom: 1rem;">Estado de Cuotas (Últimos 3 años)</h3>
+          <canvas id="chart-cuotas"></canvas>
+        </div>
+
+        <!-- Tab: Actividades -->
+        <div id="stats-actividades" class="stats-tab-content" style="display: none; width: 100%; max-width: 900px; height: 100%;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+            <h3 style="color: var(--primary); margin: 0;">Inscripciones por Actividad</h3>
+            <select id="stats-actividades-sort" class="form-control" style="width: auto; padding: 0.25rem 0.5rem;">
+              <option value="dia">Ordenar por Día y Hora</option>
+              <option value="popularidad">Ordenar por Popularidad</option>
+              <option value="nombre">Ordenar por Nombre</option>
+            </select>
+          </div>
+          <canvas id="chart-actividades"></canvas>
+        </div>
+
+        <!-- Tab: Evolución -->
+        <div id="stats-evolucion" class="stats-tab-content" style="display: none; width: 100%; max-width: 800px; height: 100%;">
+          <h3 style="text-align: center; color: var(--primary); margin-bottom: 1rem;">Evolución Histórica de Altas de Socios</h3>
+          <canvas id="chart-evolucion"></canvas>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- ======================= -->
     <!-- SECTION: IMPORTAR CSV   -->
     <!-- ======================= -->
     <section id="view-importar" class="view-section">
@@ -542,6 +606,12 @@
           <i class="fa-solid fa-trash-can" style="font-size: 2.5rem; color: var(--danger-color, #ef4444); margin-bottom: 1rem; display: block; text-align: center;"></i>
           <h3>Limpieza Histórica</h3>
           <p>Eliminar permanentemente registros antiguos</p>
+        </div>
+
+        <div class="menu-card" onclick="if(confirm('¿Estás seguro de que quieres marcar todos los pagos trimestrales de todas las inscripciones como Pendientes? Esta acción no se puede deshacer.')) { if(window.resetAllTrimestrales) window.resetAllTrimestrales(); }" style="cursor: pointer;">
+          <i class="fa-solid fa-money-bill-transfer" style="font-size: 2.5rem; color: #f59e0b; margin-bottom: 1rem; display: block; text-align: center;"></i>
+          <h3>Resetear Trimestres</h3>
+          <p>Dejar "pendiente de cobro" todos los pagos trimestrales</p>
         </div>
       </div>
 

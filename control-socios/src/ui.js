@@ -283,4 +283,7 @@ export function switchTab(targetId) {
   if (targetId === 'view-pasar-lista') {
     if (typeof env.checkAttendanceLoginStatus === 'function') env.checkAttendanceLoginStatus();
   }
+  if (targetId === 'view-estadisticas') {
+    if (typeof env.renderEstadisticas === 'function') env.renderEstadisticas();
+  }
 }

@@ -1510,3 +1510,15 @@ body.is-monitor-mode .app-header .app-title span::after { content: ' (MONITOR)';
   display: flex;
   width: 100%;
 }
+
+/* Estadisticas Tabs */
+.stats-tabs .btn { min-width: 100px; }
+.stats-tabs .btn.active { background: var(--primary); color: white; }
+.stats-tab-content { animation: fadeIn 0.3s ease; }
+
+
+/* Estadisticas Tabs */
+.stats-tabs .btn { min-width: 100px; }
+.stats-tabs .btn.active { background: var(--primary); color: white; }
+.stats-tab-content { animation: fadeIn 0.3s ease; }
+

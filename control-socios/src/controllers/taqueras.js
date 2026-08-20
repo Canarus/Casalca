@@ -115,7 +115,7 @@ export function filterSocioResultsForTaquera(term) {
   if (!container) return;
 
   term = (term || '').toLowerCase().trim();
-  if (term.length < 2) {
+  if (term.length < 1) {
     container.style.display = 'none';
     container.innerHTML = '';
     return;
@@ -186,5 +186,15 @@ export function selectSocioForTaquera(socioId) {
 export function clearSocioForTaquera() {
   document.getElementById('taqueras-socio').value = '';
   document.getElementById('taqueras-selected-socio-display').innerHTML = '<span class="text-muted">Busca un socio para ver sus datos</span>';
-  document.getElementById('taqueras-socio-search').focus();
+  
+  const searchInput = document.getElementById('taqueras-socio-search');
+  if (searchInput) searchInput.value = '';
+
+  const searchResults = document.getElementById('taqueras-socio-search-results');
+  if (searchResults) {
+    searchResults.innerHTML = '';
+    searchResults.style.display = 'none';
+  }
+
+  if (searchInput) searchInput.focus();
 }
