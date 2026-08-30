@@ -1,5 +1,5 @@
 window.onerror = function(msg, url, line, col, error) {
-  alert('Error: ' + msg + '\\nLine: ' + line + '\\nFile: ' + url);
+  alert('Error: ' + msg + '\nLine: ' + line + '\nFile: ' + url);
 };
 import * as XLSX from 'xlsx';
 import * as informesCtrl from './controllers/informes.js';
@@ -7,11 +7,13 @@ import * as importacionCtrl from './controllers/importacion.js';
 import * as actividadesCtrl from './controllers/actividades.js';
 import * as taquerasCtrl from './controllers/taqueras.js';
 import * as cuentasCtrl from './controllers/cuentas.js';
+import * as excursionesCtrl from './controllers/excursiones.js';
 
 import * as sociosCtrl from './controllers/socios.js';
 import * as cuotasCtrl from './controllers/cuotas.js';
+import * as estadisticasCtrl from './controllers/estadisticas.js';
 import { loadCollection, initDataLoader } from './services/dataLoader.js';
-import { normalizeSocioRecord, calculateAge, formatDateToDMY, getSocioNumero, formatNumeroSocio, normalizeDateValue, normalizeCodigoPostalValue } from './utils.js';
+import { normalizeSocioRecord, calculateAge, formatDateToDMY, getSocioNumero, formatNumeroSocio, normalizeDateValue, normalizeCodigoPostalValue, normalizeSearchText } from './utils.js';
 console.log("app.js loading started...");
 import { state, maps, pagination, firebaseLoadState, rebuildSociosMap, rebuildCuotasPagosMap, rebuildAsistenciasMap } from './state.js';
 import { initUI, switchTab as uiSwitchTab } from './ui.js';
@@ -46,9 +48,54 @@ export function getCuotaYearVigente() {
 
 window.switchTab = uiSwitchTab;
 
-window.downloadBackup = function() {
+window.downloadBackup = async function() {
+  const confirmText = prompt('Vas a descargar una copia de seguridad completa del sistema.\n\nEscribe la palabra "COPIAR" para confirmar la descarga:');
+  if (confirmText !== 'COPIAR') {
+    if (confirmText !== null) {
+      alert('Operación cancelada. Debes escribir "COPIAR" en mayúsculas exactamente.');
+    }
+    return;
+  }
   try {
-    const dataStr = JSON.stringify(state, (key, value) => {
+    const backupData = {
+      socios: state.socios || [],
+      actividades: state.actividades || [],
+      monitores: state.monitores || [],
+      salas: state.salas || [],
+      inscripciones: state.inscripciones || [],
+      asistencias: state.asistencias || [],
+      cuotas_config: state.cuotas_config || [],
+      cuotas_pagos: state.cuotas_pagos || [],
+      taqueras: state.taqueras || [],
+      cuentas: state.cuentas || [],
+      plantillas_autobuses: state.plantillas_autobuses || [],
+      excursiones: []
+    };
+
+    if (state.excursiones && state.excursiones.length > 0) {
+      backupData.excursiones = await Promise.all(state.excursiones.map(async (exc) => {
+        try {
+          const [busSnap, insSnap, espSnap] = await Promise.all([
+            getDocs(collection(db, 'excursiones', exc.id, 'autobuses')),
+            getDocs(collection(db, 'excursiones', exc.id, 'inscripciones')),
+            getDocs(collection(db, 'excursiones', exc.id, 'lista_espera'))
+          ]);
+          return {
+            ...exc,
+            _subcollections: {
+              autobuses: busSnap.docs.map(d => ({ id: d.id, ...d.data() })),
+              inscripciones: insSnap.docs.map(d => ({ id: d.id, ...d.data() })),
+              lista_espera: espSnap.docs.map(d => ({ id: d.id, ...d.data() }))
+            }
+          };
+        } catch (e) {
+          console.warn('Error fetching subcollections for excursion ' + exc.id, e);
+          return { ...exc, _subcollections: { autobuses: [], inscripciones: [], lista_espera: [] } };
+        }
+      }));
+    }
+
+    const dataStr = JSON.stringify(backupData, (key, value) => {
       if (value instanceof Set) return Array.from(value);
       return value;
     }, 2);
@@ -65,39 +112,86 @@ window.downloadBackup = function() {
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
     
-    alert('Copia de seguridad descargada correctamente.');
+    alert('Copia de seguridad descargada correctamente (incluye excursiones, plantillas, autobuses, asignaciones de asientos y lista de espera).');
   } catch (error) {
     console.error('Error al descargar copia de seguridad:', error);
-    alert('Hubo un error al generar la copia de seguridad.');
+    alert('Hubo un error al generar la copia de seguridad: ' + error.message);
   }
 };
 
 window.restoreBackup = async function(file) {
+  const restoreInput = document.getElementById('restore-file-input');
   if (!confirm("ADVERTENCIA: Esta acción sobrescribirá los datos actuales con la copia de seguridad. ¿Estás seguro de continuar?")) {
+    if (restoreInput) restoreInput.value = '';
+    return;
+  }
+  const confirmWord = prompt('ADVERTENCIA CRÍTICA: Esta acción reemplazará de forma irreversible todos los datos actuales de la base de datos.\n\nEscribe la palabra "SOBREESCRIBIR" para confirmar la restauración:');
+  if (confirmWord !== "SOBREESCRIBIR") {
+    alert('Operación cancelada. Debes escribir "SOBREESCRIBIR" en mayúsculas exactamente.');
+    if (restoreInput) restoreInput.value = '';
     return;
   }
   try {
     const text = await file.text();
     const backupData = JSON.parse(text);
-    const collectionsToRestore = ['socios', 'actividades', 'monitores', 'salas', 'inscripciones', 'asistencias', 'cuotas_config', 'cuotas_pagos', 'taqueras', 'cuentas'];
+    const collectionsToRestore = [
+      'socios', 'actividades', 'monitores', 'salas', 'inscripciones',
+      'asistencias', 'cuotas_config', 'cuotas_pagos', 'taqueras', 'cuentas',
+      'plantillas_autobuses', 'excursiones'
+    ];
+    
     alert("Iniciando restauración. Por favor, no cierres la ventana.");
     let totalItems = 0;
     const MAX_BATCH_SIZE = 450; 
     let batch = writeBatch(db);
     let count = 0;
+
+    const commitBatchIfNeeded = async () => {
+      count++;
+      totalItems++;
+      if (count >= MAX_BATCH_SIZE) {
+        await batch.commit();
+        batch = writeBatch(db);
+        count = 0;
+      }
+    };
+
     for (const colName of collectionsToRestore) {
       if (backupData[colName] && Array.isArray(backupData[colName])) {
         for (const item of backupData[colName]) {
           if (!item.id) continue;
-          const docRef = doc(db, colName, String(item.id));
-          const { id, ...dataToSave } = item;
+          const { id, _subcollections, autobuses, inscripciones, lista_espera, ...dataToSave } = item;
+          const docRef = doc(db, colName, String(id));
           batch.set(docRef, dataToSave);
-          count++;
-          totalItems++;
-          if (count >= MAX_BATCH_SIZE) {
-            await batch.commit();
-            batch = writeBatch(db);
-            count = 0;
+          await commitBatchIfNeeded();
+
+          if (colName === 'excursiones') {
+            const subBus = (_subcollections && _subcollections.autobuses) || autobuses || [];
+            for (const bus of subBus) {
+              if (!bus.id) continue;
+              const { id: busId, ...busData } = bus;
+              const busRef = doc(db, 'excursiones', String(id), 'autobuses', String(busId));
+              batch.set(busRef, busData);
+              await commitBatchIfNeeded();
+            }
+
+            const subIns = (_subcollections && _subcollections.inscripciones) || inscripciones || [];
+            for (const ins of subIns) {
+              if (!ins.id) continue;
+              const { id: insId, ...insData } = ins;
+              const insRef = doc(db, 'excursiones', String(id), 'inscripciones', String(insId));
+              batch.set(insRef, insData);
+              await commitBatchIfNeeded();
+            }
+
+            const subEsp = (_subcollections && _subcollections.lista_espera) || lista_espera || [];
+            for (const esp of subEsp) {
+              if (!esp.id) continue;
+              const { id: espId, ...espData } = esp;
+              const espRef = doc(db, 'excursiones', String(id), 'lista_espera', String(espId));
+              batch.set(espRef, espData);
+              await commitBatchIfNeeded();
+            }
           }
         }
       }
@@ -108,6 +202,7 @@ window.restoreBackup = async function(file) {
     alert(`Restauración completada con éxito. Se restauraron ${totalItems} registros.`);
     window.location.reload();
   } catch (error) {
+    if (restoreInput) restoreInput.value = '';
     console.error('Error al restaurar copia de seguridad:', error);
     alert('Hubo un error al restaurar la copia de seguridad: ' + error.message);
   }
@@ -120,6 +215,8 @@ Object.assign(window, sociosCtrl);
 Object.assign(window, cuotasCtrl);
 Object.assign(window, taquerasCtrl);
 Object.assign(window, cuentasCtrl);
+Object.assign(window, excursionesCtrl);
+Object.assign(window, estadisticasCtrl);
 
 export const COLLECTION_SORT_FIELDS = {
   socios: 'numeroSocio',
@@ -315,6 +412,10 @@ function handleCollectionSnapshot(colName, orderField) {
       if (typeof window.renderTaquerasTable === 'function') window.renderTaquerasTable();
     } else if (colName === 'cuentas') {
       if (typeof window.renderCuentasTable === 'function') window.renderCuentasTable();
+    } else if (colName === 'excursiones') {
+      if (typeof window.renderExcursionesTable === 'function') window.renderExcursionesTable();
+    } else if (colName === 'plantillas_autobuses') {
+      if (typeof window.renderPlantillasTable === 'function') window.renderPlantillasTable();
     } else {
       if (typeof renderTable === 'function') renderTable(colName, state[colName]);
     }
@@ -600,13 +701,45 @@ export function renderTable(colName, data) {
         paymentStatus = '<span class="badge badge-danger" title="Cuota PENDIENTE"><i class="fa-solid fa-triangle-exclamation"></i> DEBE CUOTA</span>';
       }
 
+      const parsePrice = p => typeof p === 'string' ? parseFloat(p.replace(',', '.')) : parseFloat(p);
+      const actividad = state.actividades.find(a => a.id === item.actividadId);
+      const pt = item.pagosTrimestrales || {};
+
+      const trimesterBadges = ['T1', 'T2', 'T3'].map(t => {
+        const defaultPrice = parsePrice(actividad ? actividad['precio' + t] : 0) || 0;
+        const block = pt[t] || {};
+        const isPagado = !!block.pagado;
+        
+        let amount = defaultPrice;
+        if (block.importe !== undefined && block.importe !== null && block.importe !== '') {
+          amount = parseFloat(block.importe) || 0;
+        } else if (block.importeCobrado !== undefined && block.importeCobrado !== null && block.importeCobrado !== '') {
+          amount = parseFloat(block.importeCobrado) || 0;
+        }
+
+        const hasPrice = (defaultPrice > 0) || (amount > 0) || isPagado;
+        if (!hasPrice) return '';
+
+        if (isPagado) {
+          const displayAmount = amount % 1 === 0 ? amount : amount.toFixed(2).replace('.', ',');
+          return `<span style="display: inline-flex; align-items: center; gap: 2px; font-size: 0.72rem; font-weight: 600; padding: 0.12rem 0.45rem; border-radius: 1rem; background-color: #d1e7dd; color: #0f5132;">${t}: ${displayAmount}€ ✓</span>`;
+        } else {
+          return `<span style="display: inline-flex; align-items: center; font-size: 0.72rem; font-weight: 600; padding: 0.12rem 0.45rem; border-radius: 1rem; background-color: #f8d7da; color: #842029;">${t}: Pend.</span>`;
+        }
+      }).filter(Boolean).join('');
+
+      const paymentCellContent = `
+        <div>${paymentStatus}</div>
+        ${trimesterBadges ? `<div style="display: flex; gap: 0.3rem; flex-wrap: wrap; margin-top: 0.3rem;">${trimesterBadges}</div>` : ''}
+      `;
+
       rowContent = `
         <td><strong>${numeroSocio}</strong></td>
         <td>${socioName}</td>
         <td>${actividadName}</td>
         <td>${getActividadDia(item.actividadId)}</td>
         <td>${getActividadHorario(item.actividadId)}</td>
-        <td>${paymentStatus}</td>
+        <td>${paymentCellContent}</td>
         <td><span class="badge ${item.estado === 'Alta' ? 'badge-success' : 'badge-warning'}">${item.estado || '-'}</span></td>
         ${getActionsHTML(colName, item.id, 'Inscripción')}
       `;
@@ -771,10 +904,10 @@ window.filterActividadResults = function(term) {
   let filtered = available;
 
   if (term && term.trim().length > 0) {
-    const lowerTerm = term.toLowerCase().trim();
+    const lowerTerm = normalizeSearchText(term);
     filtered = available.filter(a => {
-      const actIdStr = String(a.codigo || a.id).toLowerCase();
-      const actLabel = actividadesCtrl.formatActividadOptionLabel(a).toLowerCase();
+      const actIdStr = normalizeSearchText(a.codigo || a.id);
+      const actLabel = normalizeSearchText(actividadesCtrl.formatActividadOptionLabel(a));
       return actIdStr.includes(lowerTerm) || actLabel.includes(lowerTerm);
     });
   }
@@ -1126,10 +1259,10 @@ function setupSearch() {
           return;
         }
 
-        const term = e.target.value.toLowerCase();
+        const term = normalizeSearchText(e.target.value);
 
         let filtered;
-        filtered = state[col].filter(item => JSON.stringify(item).toLowerCase().includes(term));
+        filtered = state[col].filter(item => normalizeSearchText(JSON.stringify(item)).includes(term));
 
         renderTable(col, filtered);
       });
@@ -1257,7 +1390,11 @@ window.openModal = (colName) => {
   }
 
   if (colName === 'inscripciones') {
+    window.currentInscripcionEdit = null;
     window.clearSelectedSocio();
+    if (typeof window.clearSelectedActividad === 'function') {
+      window.clearSelectedActividad();
+    }
     const searchResults = document.getElementById('socio-search-results');
     if (searchResults) {
       searchResults.innerHTML = '';
@@ -1265,6 +1402,8 @@ window.openModal = (colName) => {
     }
     const searchInput = document.getElementById('socio-search-input');
     if (searchInput) searchInput.value = '';
+    const pagosContainer = document.getElementById('inscripciones-pagos-container');
+    if (pagosContainer) pagosContainer.style.display = 'none';
   }
 
   if (colName === 'taqueras') {
@@ -1456,7 +1595,7 @@ window.closeModal = (colName) => {
            const badge = document.getElementById('pago-' + t + '-estado');
            const isPagado = badge ? badge.textContent === 'Pagado' : false;
            const importe = parseFloat(document.getElementById('inscripciones-pago-' + t + '-importe')?.value) || 0;
-           pt[t] = { pagado: isPagado, importeCobrado: importe };
+           pt[t] = { pagado: isPagado, importe: importe, importeCobrado: importe };
         });
         data.pagosTrimestrales = pt;
       }
@@ -1515,8 +1654,7 @@ window.closeModal = (colName) => {
         window.closeModal(colName);
       }
     } catch (error) {
-      console.error(`Error saving ${colName}:`, error);
-      alert("Error al guardar. Comprueba tus permisos de Firestore.");
+         alert("Error al guardar. Comprueba tus permisos de Firestore.");
     }
   });
 });
@@ -1524,7 +1662,6 @@ window.closeModal = (colName) => {
 // ==========================================
 // CRUD DELETE LOGIC
 // ==========================================
-
 
 window.closeDeleteModal = () => {
   document.getElementById('modal-delete').classList.remove('active');
@@ -1578,10 +1715,6 @@ window.executeDelete = async () => {
   }
 };
 
-
-
-
-
 export function updateSelectAllCheckboxState() {
   const selectAllCheckbox = document.getElementById('select-all-socios');
   if (!selectAllCheckbox) return;
@@ -1612,8 +1745,6 @@ export function updateSelectAllCheckboxState() {
   }
 }
 
-
-
 function syncSociosToolbarHeight() {
   const toolbar = document.querySelector('#view-socios .socios-toolbar');
   if (!toolbar) return;
@@ -1638,8 +1769,6 @@ export function updateBulkDeleteButtonState() {
   }
   syncSociosToolbarHeight();
 }
-
-
 
 window.closeBulkDeleteModal = () => {
   document.getElementById('modal-bulk-delete').classList.remove('active');
@@ -1701,10 +1830,90 @@ window.executeBulkDelete = () => {
   }
 };
 
-// Modals backdrop close
+// Modals backdrop close & Draggable modals
 document.querySelectorAll('.modal-overlay').forEach(overlay => {
+  let isMouseDownOnBackdrop = false;
+
+  overlay.addEventListener('mousedown', (e) => {
+    isMouseDownOnBackdrop = (e.target === overlay);
+  });
+
   overlay.addEventListener('click', (e) => {
-    if (e.target === overlay) overlay.classList.remove('active');
+    if (isMouseDownOnBackdrop && e.target === overlay) {
+      overlay.classList.remove('active');
+    }
+    isMouseDownOnBackdrop = false;
+  });
+
+  const content = overlay.querySelector('.modal-content');
+  const header = overlay.querySelector('.modal-header');
+  if (!content || !header) return;
+
+  header.style.cursor = 'move';
+  header.style.userSelect = 'none';
+
+  let isDragging = false;
+  let startX, startY;
+  let currentTranslateX = 0;
+  let currentTranslateY = 0;
+
+  const resetPos = () => {
+    currentTranslateX = 0;
+    currentTranslateY = 0;
+    content.style.transform = '';
+  };
+
+  const observer = new MutationObserver(() => {
+    if (overlay.classList.contains('active')) {
+      resetPos();
+    }
+  });
+  observer.observe(overlay, { attributes: true, attributeFilter: ['class'] });
+
+  header.addEventListener('mousedown', (e) => {
+    if (e.target.closest('button') || e.target.closest('.btn-close') || e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT') return;
+    isDragging = true;
+    startX = e.clientX - currentTranslateX;
+    startY = e.clientY - currentTranslateY;
+    content.style.transition = 'none';
+  });
+
+  window.addEventListener('mousemove', (e) => {
+    if (!isDragging) return;
+    currentTranslateX = e.clientX - startX;
+    currentTranslateY = e.clientY - startY;
+    content.style.transform = `translate(${currentTranslateX}px, ${currentTranslateY}px)`;
+  });
+
+  window.addEventListener('mouseup', () => {
+    if (isDragging) {
+      isDragging = false;
+      content.style.transition = '';
+    }
+  });
+
+  header.addEventListener('touchstart', (e) => {
+    if (e.target.closest('button') || e.target.closest('.btn-close')) return;
+    const touch = e.touches[0];
+    isDragging = true;
+    startX = touch.clientX - currentTranslateX;
+    startY = touch.clientY - currentTranslateY;
+    content.style.transition = 'none';
+  }, { passive: true });
+
+  window.addEventListener('touchmove', (e) => {
+    if (!isDragging) return;
+    const touch = e.touches[0];
+    currentTranslateX = touch.clientX - startX;
+    currentTranslateY = touch.clientY - startY;
+    content.style.transform = `translate(${currentTranslateX}px, ${currentTranslateY}px)`;
+  }, { passive: true });
+
+  window.addEventListener('touchend', () => {
+    if (isDragging) {
+      isDragging = false;
+      content.style.transition = '';
+    }
   });
 });
 
@@ -1714,8 +1923,6 @@ window.updateAttendanceStartHint = () => {
   const startMonths = [null, '01', '04', '07', '10'];
   document.getElementById('attendance-start-date').value = `${year}-${startMonths[quarter]}-01`;
 };
-
-
 
 window.closeAttendanceModal = () => {
   document.getElementById('modal-attendance').classList.remove('active');
@@ -1920,8 +2127,6 @@ window.openMobileConnect = () => {
   document.getElementById('modal-mobile-connect').classList.add('active');
 };
 
-
-
 window.renderAttendanceView = () => {
   const attSel = document.getElementById('attendance-select-activity');
   const selectedActivityIds = Array.from(attSel.selectedOptions).map(opt => opt.value).filter(val => val !== "");
@@ -1990,9 +2195,6 @@ window.renderAttendanceView = () => {
   container.innerHTML = htmlResult;
 };
 
-
-
-
 window.setFontSize = (level) => {
   document.documentElement.style.setProperty('--font-multiplier', level);
   localStorage.setItem('gent_gran_font_multiplier', level);
@@ -2015,6 +2217,10 @@ function initApp() {
   Object.assign(window, actividadesCtrl);
   Object.assign(window, sociosCtrl);
   Object.assign(window, cuotasCtrl);
+  Object.assign(window, taquerasCtrl);
+  Object.assign(window, cuentasCtrl);
+  Object.assign(window, excursionesCtrl);
+  Object.assign(window, estadisticasCtrl);
 
   console.log("initApp() executed!");
   // Load saved font size
@@ -2022,6 +2228,7 @@ function initApp() {
   window.setFontSize(parseFloat(savedFont));
 
   initUI(window);
+  estadisticasCtrl.initEstadisticas();
   
   if (typeof window.populateCleanupYears === 'function') {
     window.populateCleanupYears();
@@ -2066,11 +2273,12 @@ function initApp() {
   loadCollection('cuotas_pagos', 'date');
   loadCollection('taqueras', 'numeroTaquera');
   loadCollection('cuentas', 'fecha');
+  loadCollection('excursiones', 'fechaInicio');
+  loadCollection('plantillas_autobuses', 'nombre');
 
   // Initialize Import Guide
   window.updateImportGuide();
   if (typeof window.initCuentasEvents === "function") window.initCuentasEvents();
-
   // Initialize cuotas headers in socios table
   injectCuotasHeaders();
   
@@ -2121,6 +2329,8 @@ window.CUSTOM_REPORT_DICT = {
     { id: 'numeroSocio', label: 'Nº Socio' },
     { id: 'socio', label: 'Nombre Socio' },
     { id: 'actividad', label: 'Actividad' },
+    { id: 'dia', label: 'Día' },
+    { id: 'horario', label: 'Horario' },
     { id: 'estado', label: 'Estado' },
     { id: 'importeT1', label: 'Importe T1' },
     { id: 'estadoT1', label: 'Estado T1' },
@@ -2148,8 +2358,24 @@ window.CUSTOM_REPORT_DICT = {
     { id: 'telefono', label: 'Teléfono' },
     { id: 'actividad', label: 'Actividad' },
     { id: 'cuota_actual', label: 'Cuota Año en Curso' }
+  ],
+  excursiones: [
+    { id: 'nombre', label: 'Excursión / Destino' },
+    { id: 'estado', label: 'Estado' },
+    { id: 'fechaInicio', label: 'Fecha Inicio' },
+    { id: 'fechaFin', label: 'Fecha Fin' },
+    { id: 'lugarSalida', label: 'Lugar Salida' },
+    { id: 'horaSalida', label: 'Hora Salida' },
+    { id: 'costePorPersona', label: 'Precio/Persona (€)' },
+    { id: 'suplementoIndividual', label: 'Suplemento Indiv. (€)' },
+    { id: 'numeroAutobuses', label: 'Nº Autobuses' },
+    { id: 'capacidadTotal', label: 'Capacidad Plazas' },
+    { id: 'costeTotalExcursion', label: 'Coste Total (€)' },
+    { id: 'recaudado', label: 'Recaudado (€)' },
+    { id: 'pendiente', label: 'Pendiente (€)' }
   ]
 };
+
 // Dynamically add cuota year fields to socios report dictionary
 getCuotasYears().forEach(y => {
   window.CUSTOM_REPORT_DICT.socios.push({ id: `cuota_${y}`, label: `Cuota ${y}` });
@@ -2160,8 +2386,6 @@ window.customReportSelected = [];
 
 // Estado de ordenación para informes personalizados
 window.customReportSort = [{ field: null, asc: true }];
-
-
 
 window.renderCustomReportBuilder = () => {
   const avList = document.getElementById('custom-available-list');
@@ -2189,19 +2413,15 @@ window.renderCustomReportBuilder = () => {
       </div>`).join('');
 };
 
-
-
-
-
-
-
-
-
-
-
 window.updateReportFilters = () => {
   const type = document.getElementById('report-type').value;
+  const builder = document.getElementById('custom-builder-container');
+  if (builder && type !== 'personalizado' && type !== 'cuotas_pendientes' && type !== 'actividades_morosos') {
+    builder.style.display = 'none';
+  }
+
   const container = document.getElementById('dynamic-filters');
+  if (!container) return;
   
   if (type === 'socios') {
     container.innerHTML = `
@@ -2294,7 +2514,6 @@ window.updateReportFilters = () => {
       </div>
     `;
   } else if (type === 'personalizado') {
-    const builder = document.getElementById('custom-builder-container');
     if (builder) builder.style.display = 'none';
     container.innerHTML = `
       <div class="form-group" style="margin-bottom: 0; flex: 1; min-width: 200px;">
@@ -2308,6 +2527,7 @@ window.updateReportFilters = () => {
           <option value="inscripciones">Inscripciones</option>
           <option value="taqueras">Taqueras</option>
           <option value="cuentas">Cuentas</option>
+          <option value="excursiones">Excursiones</option>
         </select>
       </div>
       <div id="report-custom-inscripciones-actividad-container" class="form-group" style="display:none; margin-bottom: 0; flex: 1; min-width: 150px;">
@@ -2342,7 +2562,6 @@ window.updateReportFilters = () => {
     window.customReportAvailable = [];
     window.customReportSelected = [];
   } else if (type === 'cuotas_pendientes') {
-    const builder = document.getElementById('custom-builder-container');
     if (builder) builder.style.display = 'block';
     container.innerHTML = `
       <input type="hidden" id="report-custom-collection" value="socios">
@@ -2363,7 +2582,6 @@ window.updateReportFilters = () => {
     });
     window.renderCustomReportBuilder();
   } else if (type === 'actividades_morosos') {
-    const builder = document.getElementById('custom-builder-container');
     if (builder) builder.style.display = 'block';
     container.innerHTML = `
       <input type="hidden" id="report-custom-collection" value="actividades_morosos_data">
@@ -2392,15 +2610,32 @@ window.updateReportFilters = () => {
         </select>
       </div>
     `;
+  } else if (type === 'excursiones_resumen') {
+    const years = [...new Set((state.excursiones || []).map(e => e.fechaInicio ? e.fechaInicio.substring(0, 4) : ''))].filter(Boolean).sort().reverse();
+    container.innerHTML = `
+      <div class="form-group" style="margin-bottom: 0;">
+        <label class="form-label">Buscar Excursión</label>
+        <input type="text" id="report-excursiones-search" class="form-control" placeholder="Nombre o destino...">
+      </div>
+      <div class="form-group" style="margin-bottom: 0;">
+        <label class="form-label">Estado</label>
+        <select id="report-excursiones-estado" class="form-control">
+          <option value="">Todos los estados</option>
+          <option value="Planificada">Planificada</option>
+          <option value="En Curso">En Curso</option>
+          <option value="Finalizada">Finalizada</option>
+          <option value="Cancelada">Cancelada</option>
+        </select>
+      </div>
+      <div class="form-group" style="margin-bottom: 0;">
+        <label class="form-label">Año</label>
+        <select id="report-excursiones-year" class="form-control">
+          <option value="">Todos los años</option>
+          ${years.map(y => `<option value="${y}">${y}</option>`).join('')}
+        </select>
+      </div>
+    `;
   }
-};
-
-const _origUpdateReportFilters = window.updateReportFilters;
-window.updateReportFilters = () => {
-  const type = document.getElementById('report-type').value;
-  const builder = document.getElementById('custom-builder-container');
-  if (builder && type !== 'personalizado' && type !== 'cuotas_pendientes') builder.style.display = 'none';
-  _origUpdateReportFilters();
 };
 
 // ==========================================
@@ -2465,10 +2700,10 @@ export function resolveCuotaImportAmount(year, amountRaw) {
 
 export function findMonitorIdByName(nameStr) {
   if (!nameStr) return "";
-  const nameLower = String(nameStr).toLowerCase().trim();
+  const nameLower = normalizeSearchText(nameStr);
   const monitor = state.monitores.find(m => 
-    `${m.nombre} ${m.apellido1 || ''} ${m.apellido2 || ''}`.toLowerCase().includes(nameLower) ||
-    nameLower.includes(m.nombre.toLowerCase()) ||
+    normalizeSearchText(`${m.nombre || ''} ${m.apellido1 || ''} ${m.apellido2 || ''}`).includes(nameLower) ||
+    nameLower.includes(normalizeSearchText(m.nombre)) ||
     m.id === nameStr
   );
   return monitor ? monitor.id : nameStr;
@@ -2476,14 +2711,15 @@ export function findMonitorIdByName(nameStr) {
 
 export function findSalaIdByName(nameStr) {
   if (!nameStr) return "";
-  const nameLower = String(nameStr).toLowerCase().trim();
+  const nameLower = normalizeSearchText(nameStr);
   const sala = state.salas.find(s => 
-    s.nombre.toLowerCase().includes(nameLower) || 
-    nameLower.includes(s.nombre.toLowerCase()) ||
+    normalizeSearchText(s.nombre).includes(nameLower) || 
+    nameLower.includes(normalizeSearchText(s.nombre)) ||
     s.id === nameStr
   );
   return sala ? sala.id : nameStr;
 }
+
 
 function getFuzzyMatch(headerList, aliases) {
   if (!headerList) return "";
@@ -3171,25 +3407,33 @@ window.initPagosUI = function(actividad, inscripcion) {
   const pt = (inscripcion && inscripcion.pagosTrimestrales) ? inscripcion.pagosTrimestrales : {};
   
   ['T1', 'T2', 'T3'].forEach(t => {
-    const defaultPrice = parsePrice(actividad['precio' + t]) || 0;
+    const defaultPrice = parsePrice(actividad ? actividad['precio' + t] : 0) || 0;
     const block = pt[t] || {};
     
-    const importeInput = document.getElementById('inscripciones-pago-' + t + '-importe');
-    if (importeInput) importeInput.value = block.importeCobrado !== undefined ? block.importeCobrado : defaultPrice;
+    let currentPrice = defaultPrice;
+    if (block.importe !== undefined && block.importe !== null && block.importe !== '') {
+      currentPrice = parseFloat(block.importe) || 0;
+    } else if (block.importeCobrado !== undefined && block.importeCobrado !== null && block.importeCobrado !== '' && (parseFloat(block.importeCobrado) > 0 || block.pagado)) {
+      currentPrice = parseFloat(block.importeCobrado) || 0;
+    }
     
     const isPagado = !!block.pagado;
-    
+    const importeInput = document.getElementById('inscripciones-pago-' + t + '-importe');
     const estadoBadge = document.getElementById('pago-' + t + '-estado');
-    if (estadoBadge) {
-      if (defaultPrice > 0 || isPagado) {
-         estadoBadge.textContent = isPagado ? 'Pagado' : 'Pendiente';
-         estadoBadge.style.backgroundColor = isPagado ? '#d1e7dd' : '#f8d7da';
-         estadoBadge.style.color = isPagado ? '#0f5132' : '#842029';
-      } else {
-         estadoBadge.textContent = 'Gratis';
-         estadoBadge.style.backgroundColor = '#e2e3e5';
-         estadoBadge.style.color = '#41464c';
-         if (importeInput) importeInput.value = 0;
+    
+    if (defaultPrice > 0 || isPagado || currentPrice > 0) {
+      if (importeInput) importeInput.value = currentPrice;
+      if (estadoBadge) {
+        estadoBadge.textContent = isPagado ? 'Pagado' : 'Pendiente';
+        estadoBadge.style.backgroundColor = isPagado ? '#d1e7dd' : '#f8d7da';
+        estadoBadge.style.color = isPagado ? '#0f5132' : '#842029';
+      }
+    } else {
+      if (importeInput) importeInput.value = 0;
+      if (estadoBadge) {
+        estadoBadge.textContent = 'Gratis';
+        estadoBadge.style.backgroundColor = '#e2e3e5';
+        estadoBadge.style.color = '#41464c';
       }
     }
     

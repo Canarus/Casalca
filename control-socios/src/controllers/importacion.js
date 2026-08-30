@@ -342,10 +342,22 @@ export const populateCleanupYears = () => {
 export const executeCleanupProcess = async () => {
   const collectionSelect = document.getElementById('cleanup-collection-select');
   const yearSelect = document.getElementById('cleanup-year-select');
-  if (!collectionSelect || !yearSelect) return;
+  if (!collectionSelect) return;
 
   const collectionName = collectionSelect.value;
-  const year = yearSelect.value;
+  const year = yearSelect ? yearSelect.value : '';
+
+  if (collectionName === 'inscripciones_trimestres') {
+    const confirmation = prompt(`Vas a resetear a "pendiente de cobro" y borrar los importes pagados de TODOS los pagos trimestrales de las inscripciones.\n\nEsta acción NO se puede deshacer.\n\nEscribe "ELIMINAR" para confirmar:`);
+    if (confirmation !== 'ELIMINAR') {
+      alert('Operación cancelada.');
+      return;
+    }
+    await resetAllTrimestrales();
+    return;
+  }
+
+  if (!yearSelect) return;
   
   const confirmation = prompt(`Vas a eliminar TODOS los registros de ${collectionSelect.options[collectionSelect.selectedIndex].text} del año ${year}.\n\nEsta acción NO se puede deshacer.\n\nEscribe "ELIMINAR" para confirmar:`);
   
@@ -406,5 +418,55 @@ export const executeCleanupProcess = async () => {
   } catch (error) {
     console.error('Error during cleanup:', error);
     alert('Ha ocurrido un error al eliminar los registros: ' + error.message);
+  }
+};
+
+export const resetAllTrimestrales = async () => {
+  try {
+    const inscripcionesRef = collection(db, 'inscripciones');
+    const snapshot = await getDocs(inscripcionesRef);
+
+    if (snapshot.empty) {
+      alert('No hay inscripciones registradas para resetear.');
+      return;
+    }
+
+    const parsePrice = (p) => {
+      if (!p) return 0;
+      if (typeof p === 'string') p = p.replace(',', '.');
+      return parseFloat(p) || 0;
+    };
+
+    let batch = writeBatch(db);
+    let count = 0;
+
+    for (const docSnap of snapshot.docs) {
+      const data = docSnap.data();
+      const actividad = state.actividades.find(a => a.id === data.actividadId);
+      const defaultT1 = actividad ? parsePrice(actividad.precioT1) : 0;
+      const defaultT2 = actividad ? parsePrice(actividad.precioT2) : 0;
+      const defaultT3 = actividad ? parsePrice(actividad.precioT3) : 0;
+
+      const pt = {
+        T1: { pagado: false, importe: defaultT1, importeCobrado: 0 },
+        T2: { pagado: false, importe: defaultT2, importeCobrado: 0 },
+        T3: { pagado: false, importe: defaultT3, importeCobrado: 0 }
+      };
+
+      batch.update(docSnap.ref, { pagosTrimestrales: pt });
+      count++;
+      if (count % 500 === 0) {
+        await batch.commit();
+        batch = writeBatch(db);
+      }
+    }
+    if (count % 500 !== 0) {
+      await batch.commit();
+    }
+
+    alert(`¡Éxito! Se han reseteado los pagos trimestrales de ${count} inscripciones a pendiente y se han borrado los importes cobrados.`);
+  } catch (error) {
+    console.error('Error al resetear trimestres:', error);
+    alert('Ha ocurrido un error al resetear los pagos trimestrales: ' + error.message);
   }
 };

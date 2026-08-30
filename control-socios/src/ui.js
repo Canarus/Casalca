@@ -12,6 +12,11 @@ function setupHeaderActions(env) {
     btnConfig.addEventListener('click', () => env.switchTab('view-importar'));
   }
 
+  const btnProcesos = document.getElementById('btn-open-procesos-especiales');
+  if (btnProcesos) {
+    btnProcesos.addEventListener('click', () => env.switchTab('view-procesos-especiales'));
+  }
+
   const btnMobile = document.getElementById('btn-open-mobile-connect');
   if (btnMobile) {
     btnMobile.addEventListener('click', () => env.openMobileConnect());
@@ -26,7 +31,7 @@ function setupHeaderActions(env) {
     });
   }
 
-  const btnRestore = document.getElementById('btn-restore-data-hidden');
+  const btnRestore = document.getElementById('btn-restore-data') || document.getElementById('btn-restore-data-hidden');
   const restoreInput = document.getElementById('restore-file-input');
   if (btnRestore && restoreInput) {
     btnRestore.addEventListener('click', () => {
@@ -158,6 +163,11 @@ function setupGlobalDelegation(env) {
       case 'execute-cleanup':
         env.executeCleanupProcess();
         break;
+      case 'reset-trimestres':
+        if (confirm('¿Estás seguro de que quieres marcar todos los pagos trimestrales de todas las inscripciones como Pendientes? Esta acción no se puede deshacer.')) {
+          if (env.resetAllTrimestrales) env.resetAllTrimestrales();
+        }
+        break;
       case 'custom-report-sort-by':
         env.customReportSortBy(button.dataset.field);
         break;
@@ -273,6 +283,9 @@ export function switchTab(targetId) {
 
   // Run page-specific side effects if environment/window methods exist
   const env = window;
+  if (targetId === 'view-excursiones') {
+    if (typeof env.renderExcursionesTable === 'function') env.renderExcursionesTable();
+  }
   if (targetId === 'view-cuotas') {
     if (typeof env.renderCuotasTable === 'function') env.renderCuotasTable();
     if (typeof env.syncCuotasStickyHeight === 'function') requestAnimationFrame(env.syncCuotasStickyHeight);
@@ -285,5 +298,8 @@ export function switchTab(targetId) {
   }
   if (targetId === 'view-estadisticas') {
     if (typeof env.renderEstadisticas === 'function') env.renderEstadisticas();
+  }
+  if (targetId === 'view-procesos-especiales') {
+    if (typeof env.populateCleanupYears === 'function') env.populateCleanupYears();
   }
 }

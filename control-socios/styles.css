@@ -336,11 +336,12 @@ h1, h2, h3, h4, h5 {
   #view-actividades .table-container,
   #view-monitores .table-container,
   #view-salas .table-container,
-  #view-inscripciones .table-container { flex: 1 1 0; min-height: 0; }
+  #view-inscripciones .table-container,
+  #view-excursiones .table-container { flex: 1 1 0; min-height: 0; }
 
   .pagination-container { flex-shrink: 0; }
 
-  #view-home, #view-importar, #view-informes, #view-pasar-lista { overflow-y: auto; }
+  #view-home, #view-importar, #view-informes, #view-pasar-lista, #view-excursion-detail { overflow-y: auto; }
 }
 
 @media (min-width: 1025px) {
@@ -434,29 +435,36 @@ h1, h2, h3, h4, h5 {
 .menu-card:hover::before { opacity: 1; }
 
 .card-icon {
-  width: 68px;
-  height: 68px;
-  border-radius: var(--r-lg);
+  width: 64px;
+  height: 64px;
+  border-radius: var(--r-xl);
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 1.75rem;
-  transition: transform .35s cubic-bezier(.175,.885,.32,1.275);
+  font-size: 1.85rem;
+  transition: all .35s cubic-bezier(.175,.885,.32,1.275);
   position: relative;
   z-index: 1;
+  box-shadow: 0 4px 12px rgba(17,24,39,.06);
 }
-.menu-card:hover .card-icon { transform: scale(1.12) rotate(4deg); }
+.menu-card:hover .card-icon { 
+  transform: scale(1.12) translateY(-4px); 
+  box-shadow: 0 10px 20px rgba(17,24,39,.12); 
+}
 
-.card-icon-img {
-  width: 64px;
-  height: 64px;
-  object-fit: contain;
-  transition: transform .35s cubic-bezier(.175,.885,.32,1.275);
-  filter: drop-shadow(0 6px 12px rgba(17,24,39,.15));
-  position: relative;
-  z-index: 1;
-}
-.menu-card:hover .card-icon-img { transform: scale(1.1) translateY(-5px); filter: drop-shadow(0 12px 20px rgba(17,24,39,.22)); }
+/* Menu card icon color themes */
+.card-icon.icon-socios       { background: linear-gradient(135deg, #e0e7ff 0%, #c7d2fe 100%); color: #4338ca; }
+.card-icon.icon-cuotas       { background: linear-gradient(135deg, #dcfce7 0%, #bbf7d0 100%); color: #15803d; }
+.card-icon.icon-actividades  { background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%); color: #b45309; }
+.card-icon.icon-inscripciones{ background: linear-gradient(135deg, #cffafe 0%, #a5f3fc 100%); color: #0e7490; }
+.card-icon.icon-asistencia   { background: linear-gradient(135deg, #e0f2fe 0%, #bae6fd 100%); color: #0284c7; }
+.card-icon.icon-monitores    { background: linear-gradient(135deg, #f3e8ff 0%, #e9d5ff 100%); color: #7e22ce; }
+.card-icon.icon-salas        { background: linear-gradient(135deg, #ffe4e6 0%, #fecdd3 100%); color: #e11d48; }
+.card-icon.icon-taqueras     { background: linear-gradient(135deg, #ffedd5 0%, #fed7aa 100%); color: #c2410c; }
+.card-icon.icon-cuentas      { background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%); color: #059669; }
+.card-icon.icon-excursiones  { background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%); color: #2563eb; }
+.card-icon.icon-informes     { background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%); color: #dc2626; }
+.card-icon.icon-estadisticas { background: linear-gradient(135deg, #ede9fe 0%, #ddd6fe 100%); color: #6d28d9; }
 
 .menu-card h3 {
   font-size: 1.1rem;
@@ -893,6 +901,11 @@ h1, h2, h3, h4, h5 {
   align-items: center;
   background: var(--primary-pale);
   flex-shrink: 0;
+  cursor: grab;
+  user-select: none;
+}
+.modal-header:active {
+  cursor: grabbing;
 }
 
 .modal-title {

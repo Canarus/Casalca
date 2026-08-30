@@ -1,11 +1,11 @@
 import { state, pagination, maps } from '../state.js';
 import { renderTable, findCuotaPago, getCuotaYearVigente } from '../main.js';
-import { calculateAge, formatNumeroSocio } from '../utils.js';
+import { calculateAge, formatNumeroSocio, normalizeSearchText } from '../utils.js';
 
 export const taquerasSort = { field: 'numeroTaquera', asc: true };
 
 export function renderTaquerasTable() {
-  const term = (document.getElementById('searchTaqueras')?.value || '').toLowerCase().trim();
+  const term = normalizeSearchText(document.getElementById('searchTaqueras')?.value);
   let filtered = [...state.taqueras];
 
   if (term) {
@@ -13,7 +13,7 @@ export function renderTaquerasTable() {
       const socio = maps.socios.get(item.socioId);
       const socioName = socio ? `${socio.nombre || ''} ${socio.apellido1 || ''} ${socio.apellido2 || ''}` : '';
       const numeroSocio = socio ? (socio.numeroSocio || '') : '';
-      const t = `${item.numeroTaquera || ''} ${numeroSocio} ${socioName}`.toLowerCase();
+      const t = normalizeSearchText(`${item.numeroTaquera || ''} ${numeroSocio} ${socioName}`);
       return t.includes(term);
     });
   }
@@ -114,16 +114,16 @@ export function filterSocioResultsForTaquera(term) {
   const container = document.getElementById('taqueras-socio-search-results');
   if (!container) return;
 
-  term = (term || '').toLowerCase().trim();
-  if (term.length < 1) {
+  const termNorm = normalizeSearchText(term);
+  if (termNorm.length < 1) {
     container.style.display = 'none';
     container.innerHTML = '';
     return;
   }
 
   const matches = state.socios.filter(s => {
-    const text = `${s.numeroSocio || ''} ${s.nombre || ''} ${s.apellido1 || ''} ${s.apellido2 || ''} ${s.telefono || ''}`.toLowerCase();
-    return text.includes(term);
+    const text = normalizeSearchText(`${s.numeroSocio || ''} ${s.nombre || ''} ${s.apellido1 || ''} ${s.apellido2 || ''} ${s.telefono || ''}`);
+    return text.includes(termNorm);
   }).slice(0, 15);
 
   if (matches.length === 0) {

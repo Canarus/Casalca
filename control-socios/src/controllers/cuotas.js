@@ -1,6 +1,6 @@
 import { getCuotasYears, isCuotaYearAllowed, getCuotaYearVigente, cuotasSort, syncCuotasStickyHeight, renderPaginationControls, findCuotaPago, handleMultiSort } from '../main.js';
 import { state, pagination, maps } from '../state.js';
-import { calculateAge, formatNumeroSocio } from '../utils.js';
+import { calculateAge, formatNumeroSocio, normalizeSearchText } from '../utils.js';
 import { db, collection, addDoc, doc, updateDoc, deleteDoc, query, where, getDocs, setDoc } from '../services/db.js';
 
 const formatCurrency = (num) => {
@@ -45,9 +45,9 @@ export function renderCuotasTable() {
   // Update Config UI
   document.getElementById('cuota-amount-input').value = yearAmount.toFixed(2);
 
-  const term = document.getElementById('searchCuotas')?.value.toLowerCase() || '';
+  const term = normalizeSearchText(document.getElementById('searchCuotas')?.value);
   let filteredSocios = state.socios.filter(s =>
-    `${s.nombre} ${s.apellido1} ${s.apellido2} ${s.numeroSocio}`.toLowerCase().includes(term)
+    normalizeSearchText(`${s.nombre || ''} ${s.apellido1 || ''} ${s.apellido2 || ''} ${s.numeroSocio || ''}`).includes(term)
   );
 
   filteredSocios = [...filteredSocios].sort((a, b) => {

@@ -1,9 +1,10 @@
 import { getCuotasYears, isCuotaYearAllowed, getCuotaYearVigente, findCuotaPago, handleMultiSort, getDayWeight } from '../main.js';
 import { state, pagination, maps } from '../state.js';
-import { calculateAge, formatDateToDMY } from '../utils.js';
-import { getMonitorName, getSalaName, getActividadName } from './actividades.js';
+import { calculateAge, formatDateToDMY, normalizeSearchText } from '../utils.js';
+import { getMonitorName, getSalaName, getActividadName, getActividadDia, getActividadHorario, horarioSortKey } from './actividades.js';
+import { db, collection, getDocs } from '../services/db.js';
 
-export function generateReport() {
+export async function generateReport() {
   const type = document.getElementById('report-type').value;
   const resultsContainer = document.getElementById('report-results');
   let html = '';
@@ -56,14 +57,14 @@ export function generateReport() {
       `;
     }
   } else if (type === 'socios') {
-    const term = (document.getElementById('report-socios-term')?.value || '').toLowerCase();
+    const term = normalizeSearchText(document.getElementById('report-socios-term')?.value);
     const sexo = document.getElementById('report-socios-sexo')?.value || '';
     const tiquet = document.getElementById('report-socios-tiquet')?.value || '';
 
     let filtered = state.socios.filter(s => {
       let match = true;
       if (term) {
-        const text = `${s.numeroSocio || ''} ${s.nombre || ''} ${s.apellido1 || ''} ${s.dni || ''} ${s.poblacion || ''}`.toLowerCase();
+        const text = normalizeSearchText(`${s.numeroSocio || ''} ${s.nombre || ''} ${s.apellido1 || ''} ${s.dni || ''} ${s.poblacion || ''}`);
         if (!text.includes(term)) match = false;
       }
       if (sexo && s.sexo !== sexo) match = false;
@@ -183,7 +184,7 @@ export function generateReport() {
   } else if (type === 'asistencias_estadisticas') {
     const actId = document.getElementById('report-asist-actividad')?.value || '';
     const monId = document.getElementById('report-asist-monitor')?.value || '';
-    const socioTerm = (document.getElementById('report-asist-socio')?.value || '').toLowerCase();
+    const socioTerm = normalizeSearchText(document.getElementById('report-asist-socio')?.value);
     const estado = document.getElementById('report-asist-estado')?.value || '';
     const desde = document.getElementById('report-asist-desde')?.value || '';
     const hasta = document.getElementById('report-asist-hasta')?.value || '';
@@ -203,7 +204,7 @@ export function generateReport() {
         if (!socio) {
           match = false;
         } else {
-          const text = `${socio.numeroSocio || ''} ${socio.nombre || ''} ${socio.apellido1 || ''} ${socio.apellido2 || ''}`.toLowerCase();
+          const text = normalizeSearchText(`${socio.numeroSocio || ''} ${socio.nombre || ''} ${socio.apellido1 || ''} ${socio.apellido2 || ''}`);
           if (!text.includes(socioTerm)) match = false;
         }
       }
@@ -532,9 +533,163 @@ export function generateReport() {
         </table>
       </div>
     `;
+  } else if (type === 'excursiones_resumen') {
+    const searchTerm = normalizeSearchText(document.getElementById('report-excursiones-search')?.value);
+    const estadoFilter = document.getElementById('report-excursiones-estado')?.value || '';
+    const yearFilter = document.getElementById('report-excursiones-year')?.value || '';
+
+    let list = (state.excursiones || []).slice();
+
+    if (yearFilter) {
+      list = list.filter(e => e.fechaInicio && e.fechaInicio.startsWith(yearFilter));
+    }
+    if (estadoFilter) {
+      list = list.filter(e => (e.estado || 'Planificada') === estadoFilter);
+    }
+    if (searchTerm) {
+      list = list.filter(e =>
+        normalizeSearchText(e.nombre).includes(searchTerm) ||
+        normalizeSearchText(e.lugarSalida).includes(searchTerm)
+      );
+    }
+
+    // Sort by fechaInicio descending
+    list.sort((a, b) => (b.fechaInicio || '').localeCompare(a.fechaInicio || ''));
+
+    // Load actual passenger inscriptions and buses for accurate count
+    const listConDetalles = await Promise.all(list.map(async (exc) => {
+      try {
+        const [busSnap, insSnap] = await Promise.all([
+          getDocs(collection(db, 'excursiones', exc.id, 'autobuses')),
+          getDocs(collection(db, 'excursiones', exc.id, 'inscripciones'))
+        ]);
+        const validBusIds = new Set(busSnap.docs.map(d => d.id));
+        const validInscripciones = busSnap.docs.length > 0
+          ? insSnap.docs.map(d => ({ id: d.id, ...d.data() })).filter(ins => validBusIds.has(ins.idAutobus))
+          : insSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+
+        let totalPlazas = 0;
+        busSnap.docs.forEach(d => {
+          const bData = d.data();
+          totalPlazas += (bData.plazasTotales || 0);
+        });
+
+        return {
+          ...exc,
+          numeroAutobuses: busSnap.docs.length || exc.numeroAutobuses || 1,
+          capacidadTotal: totalPlazas || exc.capacidadTotal || 0,
+          _inscripciones: validInscripciones
+        };
+      } catch (err) {
+        return { ...exc, _inscripciones: [] };
+      }
+    }));
+
+    let totalCapacidad = 0;
+    let totalOcupadas = 0;
+    let totalCostes = 0;
+    let totalRecaudado = 0;
+    let totalPendiente = 0;
+    let totalBeneficio = 0;
+
+    const rows = listConDetalles.map(e => {
+      const coste = parseFloat(e.costeTotalExcursion) || 0;
+      const rec = parseFloat(e.recaudado) || 0;
+      const pend = parseFloat(e.pendiente) || 0;
+      const ben = rec - coste;
+      const rentabilidad = coste > 0 ? (ben / coste) * 100 : 0;
+      const cap = parseInt(e.capacidadTotal, 10) || 0;
+      const numBuses = e.numeroAutobuses || 1;
+      const ocupadas = e._inscripciones ? e._inscripciones.length : 0;
+
+      totalCapacidad += cap;
+      totalOcupadas += ocupadas;
+      totalCostes += coste;
+      totalRecaudado += rec;
+      totalPendiente += pend;
+      totalBeneficio += ben;
+
+      const estadoColors = {
+        'Planificada': 'background: #e0f2fe; color: #0369a1;',
+        'En Curso': 'background: #fef3c7; color: #b45309;',
+        'Finalizada': 'background: #dcfce7; color: #15803d;',
+        'Cancelada': 'background: #fee2e2; color: #b91c1c;'
+      };
+      const estadoBadge = `<span style="display: inline-block; padding: 0.2rem 0.5rem; border-radius: 4px; font-weight: 700; font-size: 0.78rem; ${estadoColors[e.estado] || estadoColors['Planificada']}">${e.estado || 'Planificada'}</span>`;
+
+      const fechas = e.fechaFin && e.fechaFin !== e.fechaInicio 
+        ? `${e.fechaInicio || '-'} al ${e.fechaFin}` 
+        : (e.fechaInicio || '-');
+
+      return `
+        <tr>
+          <td style="font-weight: 600;">${e.nombre || 'Sin título'}</td>
+          <td style="font-size: 0.85rem; color: #64748b;">${fechas}</td>
+          <td style="text-align: center;">${estadoBadge}</td>
+          <td style="text-align: center; font-size: 0.85rem;">${numBuses} bus(es) / ${cap} pl.</td>
+          <td style="text-align: center; font-weight: 600;">${ocupadas} / ${cap}</td>
+          <td style="text-align: right; color: #475569;">${formatCurrency(coste)} €</td>
+          <td style="text-align: right; color: #15803d; font-weight: 600;">${formatCurrency(rec)} €</td>
+          <td style="text-align: right; color: ${pend > 0 ? '#b91c1c' : '#64748b'}; font-weight: ${pend > 0 ? '700' : 'normal'};">${formatCurrency(pend)} €</td>
+          <td style="text-align: right; font-weight: 700; color: ${ben >= 0 ? '#15803d' : '#b91c1c'};">${ben >= 0 ? '+' : ''}${formatCurrency(ben)} €</td>
+          <td style="text-align: right; font-weight: 600; color: ${rentabilidad >= 0 ? '#15803d' : '#b91c1c'};">${rentabilidad.toFixed(1)}%</td>
+        </tr>
+      `;
+    }).join('');
+
+    const rentabilidadMedia = totalCostes > 0 ? (totalBeneficio / totalCostes) * 100 : 0;
+    const subtitle = [
+      yearFilter ? `Año: ${yearFilter}` : 'Todos los años',
+      estadoFilter ? `Estado: ${estadoFilter}` : 'Todos los estados',
+      searchTerm ? `Búsqueda: "${searchTerm}"` : null
+    ].filter(Boolean).join(' | ');
+
+    html = `
+      <div style="margin-bottom: 1.5rem;">
+        <h2 style="color: var(--primary-dark); margin-bottom: 0.25rem;">Resumen Contable y Financiero de Excursiones</h2>
+        <div style="font-size: 0.9rem; color: #64748b; font-weight: 500;">${subtitle} &bull; Total excursiones: ${list.length}</div>
+      </div>
+      <div class="table-container">
+        <table class="members-table" style="width: 100%;">
+          <thead>
+            <tr>
+              <th>Excursión / Destino</th>
+              <th>Fechas</th>
+              <th style="text-align: center;">Estado</th>
+              <th style="text-align: center;">Buses / Plazas</th>
+              <th style="text-align: center;">Ocupación</th>
+              <th style="text-align: right;">Coste Total</th>
+              <th style="text-align: right;">Recaudado</th>
+              <th style="text-align: right;">Pendiente</th>
+              <th style="text-align: right;">Beneficio Neto</th>
+              <th style="text-align: right;">Rentabilidad</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${rows || '<tr><td colspan="10" style="text-align: center; padding: 2rem;">No se encontraron excursiones con los filtros seleccionados.</td></tr>'}
+          </tbody>
+          ${list.length > 0 ? `
+          <tfoot>
+            <tr style="background: #f1f5f9; font-weight: bold; border-top: 2px solid #cbd5e1;">
+              <td style="font-weight: 800; text-transform: uppercase;">TOTALES (${list.length})</td>
+              <td></td>
+              <td></td>
+              <td style="text-align: center;">${totalCapacidad} plazas</td>
+              <td style="text-align: center;">${totalOcupadas} / ${totalCapacidad} (${totalCapacidad > 0 ? Math.round((totalOcupadas/totalCapacidad)*100) : 0}%)</td>
+              <td style="text-align: right; color: #475569;">${formatCurrency(totalCostes)} €</td>
+              <td style="text-align: right; color: #15803d;">${formatCurrency(totalRecaudado)} €</td>
+              <td style="text-align: right; color: ${totalPendiente > 0 ? '#b91c1c' : '#475569'};">${formatCurrency(totalPendiente)} €</td>
+              <td style="text-align: right; color: ${totalBeneficio >= 0 ? '#15803d' : '#b91c1c'}; font-size: 1.05rem;">${totalBeneficio >= 0 ? '+' : ''}${formatCurrency(totalBeneficio)} €</td>
+              <td style="text-align: right; color: ${rentabilidadMedia >= 0 ? '#15803d' : '#b91c1c'};">${rentabilidadMedia.toFixed(1)}%</td>
+            </tr>
+          </tfoot>
+          ` : ''}
+        </table>
+      </div>
+    `;
   } else if (type === 'personalizado' || type === 'cuotas_pendientes' || type === 'actividades_morosos') {
     const col = document.getElementById('report-custom-collection')?.value;
-    const term = (document.getElementById('report-custom-filter')?.value || '').toLowerCase();
+    const term = normalizeSearchText(document.getElementById('report-custom-filter')?.value);
     
     if (!col) {
       alert('Selecciona un fichero para el informe personalizado.');
@@ -654,18 +809,26 @@ export function generateReport() {
         row.socio = socio ? `${socio.nombre} ${socio.apellido1}` : '-';
         row.numeroSocio = socio ? socio.numeroSocio : '-';
         row.actividad = getActividadName(item.actividadId);
+        row.dia = getActividadDia(item.actividadId);
+        row.horario = getActividadHorario(item.actividadId);
         
         const hasPriceT1 = act && (parsePrice(act.precioT1) > 0);
         const hasPriceT2 = act && (parsePrice(act.precioT2) > 0);
         const hasPriceT3 = act && (parsePrice(act.precioT3) > 0);
         
-        row.importeT1 = (pt.T1 && pt.T1.pagado) ? pt.T1.importeCobrado : ((pt.T1 && pt.T1.importeCobrado) || (hasPriceT1 ? 0 : ''));
+        const getImporteVal = (block, hasPrice, defaultPrice) => {
+          if (block && block.importe !== undefined && block.importe !== null && block.importe !== '') return block.importe;
+          if (block && block.importeCobrado !== undefined && block.importeCobrado !== null && block.importeCobrado !== '' && (block.importeCobrado > 0 || block.pagado)) return block.importeCobrado;
+          return hasPrice ? (parsePrice(defaultPrice) || 0) : '';
+        };
+
+        row.importeT1 = getImporteVal(pt.T1, hasPriceT1, act?.precioT1);
         row.estadoT1 = (pt.T1 && pt.T1.pagado) ? 'Pagado' : (hasPriceT1 ? 'Pendiente' : '-');
         
-        row.importeT2 = (pt.T2 && pt.T2.pagado) ? pt.T2.importeCobrado : ((pt.T2 && pt.T2.importeCobrado) || (hasPriceT2 ? 0 : ''));
+        row.importeT2 = getImporteVal(pt.T2, hasPriceT2, act?.precioT2);
         row.estadoT2 = (pt.T2 && pt.T2.pagado) ? 'Pagado' : (hasPriceT2 ? 'Pendiente' : '-');
         
-        row.importeT3 = (pt.T3 && pt.T3.pagado) ? pt.T3.importeCobrado : ((pt.T3 && pt.T3.importeCobrado) || (hasPriceT3 ? 0 : ''));
+        row.importeT3 = getImporteVal(pt.T3, hasPriceT3, act?.precioT3);
         row.estadoT3 = (pt.T3 && pt.T3.pagado) ? 'Pagado' : (hasPriceT3 ? 'Pendiente' : '-');
         
       } else if (col === 'taqueras') {
@@ -726,7 +889,7 @@ export function generateReport() {
       mappedData = mappedData.filter(row =>
         window.customReportSelected.some(f => {
           const val = row[f.id];
-          return val && String(val).toLowerCase().includes(term);
+          return val != null && normalizeSearchText(val).includes(term);
         })
       );
     }
@@ -744,6 +907,12 @@ export function generateReport() {
           if (sortField === 'dia') {
             valA = getDayWeight(valA);
             valB = getDayWeight(valB);
+          }
+          
+          if (sortField === 'horario') {
+            const timeA = horarioSortKey(valA);
+            const timeB = horarioSortKey(valB);
+            if (timeA !== timeB) return sortAsc ? timeA - timeB : timeB - timeA;
           }
           
           // Intento numérico

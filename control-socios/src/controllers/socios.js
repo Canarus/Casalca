@@ -1,5 +1,5 @@
 import { state, pagination, maps } from '../state.js';
-import { calculateAge, getSocioNumero } from '../utils.js';
+import { calculateAge, getSocioNumero, normalizeSearchText } from '../utils.js';
 import { 
   updateSortIcons, 
   sociosSort, 
@@ -15,12 +15,12 @@ export function renderSociosTable() {
   // Update sort icons in DOM
   updateSortIcons();
 
-  const term = (document.getElementById('searchSocios')?.value || '').toLowerCase().trim();
+  const term = normalizeSearchText(document.getElementById('searchSocios')?.value);
   let filtered = [...state.socios];
   
   if (term) {
     filtered = state.socios.filter(item => {
-      const socioText = `${item.numeroSocio || ''} ${item.nombre || ''} ${item.apellido1 || ''} ${item.apellido2 || ''} ${item.telefono || ''}`.toLowerCase();
+      const socioText = normalizeSearchText(`${item.numeroSocio || ''} ${item.nombre || ''} ${item.apellido1 || ''} ${item.apellido2 || ''} ${item.telefono || ''}`);
       return socioText.includes(term);
     });
   }
@@ -129,15 +129,15 @@ export function filterSocioResults(term) {
     return;
   }
 
-  const lowerTerm = term.toLowerCase().trim();
+  const lowerTerm = normalizeSearchText(term);
   const filtered = state.socios.filter(s => {
-    const num = String(s.numeroSocio || '').toLowerCase();
-    const fullName = `${s.nombre} ${s.apellido1} ${s.apellido2}`.toLowerCase();
+    const num = normalizeSearchText(s.numeroSocio);
+    const fullName = normalizeSearchText(`${s.nombre || ''} ${s.apellido1 || ''} ${s.apellido2 || ''}`);
     return num === lowerTerm || num.includes(lowerTerm) || fullName.includes(lowerTerm);
   }).sort((a, b) => {
     // Prioritize exact number match
-    const numA = String(a.numeroSocio || '').toLowerCase();
-    const numB = String(b.numeroSocio || '').toLowerCase();
+    const numA = normalizeSearchText(a.numeroSocio);
+    const numB = normalizeSearchText(b.numeroSocio);
     if (numA === lowerTerm && numB !== lowerTerm) return -1;
     if (numB === lowerTerm && numA !== lowerTerm) return 1;
     return 0;

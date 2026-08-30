@@ -11,7 +11,10 @@ export const state = {
   cuotas_pagos: [],
   taqueras: [],
   cuentas: [],
+  excursiones: [],
+  plantillas_autobuses: [],
   selectedYear: new Date().getFullYear(),
+
   selectedSocios: new Set(),
   visibleSocios: [],
   loggedMonitorId: null,

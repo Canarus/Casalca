@@ -6,7 +6,7 @@ import {
   updateActividadesSortIcons, updateInscripcionesSortIcons, updateMonitoresSortIcons, updateSalasSortIcons,
   getDayWeight, findCuotaPago, getCuotaYearVigente
 } from '../main.js';
-import { normalizeDateValue, normalizeCodigoPostalValue, getSocioNumero, calculateAge } from '../utils.js';
+import { normalizeDateValue, normalizeCodigoPostalValue, getSocioNumero, calculateAge, normalizeSearchText } from '../utils.js';
 
 export function changeInscripcionesPage(dir) {
   const totalPages = Math.ceil(pagination.visibleInscripcionesCount / pagination.inscripcionesPageSize);
@@ -127,14 +127,14 @@ export function editRecord(colName, id) {
 
 export function renderActividadesTable() {
   updateActividadesSortIcons();
-  const term = (document.getElementById('searchActividades')?.value || '').toLowerCase().trim();
+  const term = normalizeSearchText(document.getElementById('searchActividades')?.value);
   let filtered = [...state.actividades];
   if (term) {
     filtered = filtered.filter(item => {
-      const monitorName = getMonitorName(item.monitorId).toLowerCase();
+      const monitorName = normalizeSearchText(getMonitorName(item.monitorId));
       const sala = state.salas.find(x => x.id === item.salaId);
-      const salaName = sala ? sala.nombre.toLowerCase() : '';
-      const text = `${item.codigo || ''} ${item.nombre || ''} ${item.dia || ''} ${item.horario || ''} ${monitorName} ${salaName}`.toLowerCase();
+      const salaName = sala ? normalizeSearchText(sala.nombre) : '';
+      const text = normalizeSearchText(`${item.codigo || ''} ${item.nombre || ''} ${item.dia || ''} ${item.horario || ''} ${monitorName} ${salaName}`);
       return text.includes(term);
     });
   }
@@ -179,12 +179,13 @@ export function renderActividadesTable() {
 
 export function renderMonitoresTable() {
   updateMonitoresSortIcons();
-  const term = (document.getElementById('searchMonitores')?.value || '').toLowerCase().trim();
+  const term = normalizeSearchText(document.getElementById('searchMonitores')?.value);
   let filtered = [...state.monitores];
   if (term) {
     filtered = filtered.filter(item => {
-      const name = `${item.nombre || ''} ${item.apellido1 || ''} ${item.apellido2 || ''}`.toLowerCase();
-      return name.includes(term) || (item.telefono || '').includes(term);
+      const name = normalizeSearchText(`${item.nombre || ''} ${item.apellido1 || ''} ${item.apellido2 || ''}`);
+      const tel = normalizeSearchText(item.telefono);
+      return name.includes(term) || tel.includes(term);
     });
   }
 
@@ -209,11 +210,11 @@ export function renderMonitoresTable() {
 
 export function renderSalasTable() {
   updateSalasSortIcons();
-  const term = (document.getElementById('searchSalas')?.value || '').toLowerCase().trim();
+  const term = normalizeSearchText(document.getElementById('searchSalas')?.value);
   let filtered = [...state.salas];
   if (term) {
     filtered = filtered.filter(item => {
-      return (item.nombre || '').toLowerCase().includes(term) || (item.aforo || '').toString().includes(term);
+      return normalizeSearchText(item.nombre).includes(term) || normalizeSearchText(item.aforo).includes(term);
     });
   }
 
@@ -238,15 +239,15 @@ export function renderSalasTable() {
 
 export function renderInscripcionesTable() {
   updateInscripcionesSortIcons();
-  const term = (document.getElementById('searchInscripciones')?.value || '').toLowerCase().trim();
+  const term = normalizeSearchText(document.getElementById('searchInscripciones')?.value);
   let filtered = [...state.inscripciones];
 
   if (term) {
     filtered = state.inscripciones.filter(item => {
       const socio = maps.socios.get(item.socioId);
       const actividad = state.actividades.find(a => a.id === item.actividadId);
-      const socioText = socio ? `${socio.numeroSocio} ${socio.nombre} ${socio.apellido1} ${socio.apellido2}`.toLowerCase() : '';
-      const actividadText = actividad ? actividad.nombre.toLowerCase() : '';
+      const socioText = socio ? normalizeSearchText(`${socio.numeroSocio} ${socio.nombre} ${socio.apellido1} ${socio.apellido2}`) : '';
+      const actividadText = actividad ? normalizeSearchText(actividad.nombre) : '';
       return socioText.includes(term) || actividadText.includes(term);
     });
   }

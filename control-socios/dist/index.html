@@ -30,8 +30,8 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <!-- SheetJS to read excel and csv files in client side -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-  <script type="module" crossorigin src="/assets/index-C3YdBfSb.js"></script>
-  <link rel="stylesheet" crossorigin href="/assets/index-WR2IVpOQ.css">
+  <script type="module" crossorigin src="/assets/index-CKSAVqPE.js"></script>
+  <link rel="stylesheet" crossorigin href="/assets/index-nXDqNQXP.css">
 </head>
 
 <body>
@@ -78,8 +78,11 @@
         <button class="btn btn-outline btn-sm font-toggle-btn" data-size="1.2" title="Texto Grande">A+</button>
         <button class="btn btn-outline btn-sm font-toggle-btn" data-size="1.4" title="Texto Muy Grande">A++</button>
       </div>
-      <button id="btn-open-config" class="btn btn-outline btn-sm" style="margin-right: 1rem; border-color: #cbd5e1;">
+      <button id="btn-open-config" class="btn btn-outline btn-sm" style="margin-right: 0.5rem; border-color: #cbd5e1;">
         <i class="fa-solid fa-gear"></i> Configuración
+      </button>
+      <button id="btn-open-procesos-especiales" class="btn btn-outline btn-sm" style="margin-right: 1rem; border-color: #cbd5e1;">
+        <i class="fa-solid fa-screwdriver-wrench"></i> Procesos Especiales
       </button>
       <button id="btn-open-mobile-connect" class="btn btn-outline btn-sm" style="margin-right: 1rem; border-color: #cbd5e1;">
         <i class="fa-solid fa-mobile-screen"></i> Conectar Móvil
@@ -107,6 +110,7 @@
     <div class="nav-tab" data-target="view-salas"><i class="fa-solid fa-door-open"></i> Salas</div>
     <div class="nav-tab" data-target="view-taqueras"><i class="fa-solid fa-box-archive"></i> Taqueras</div>
     <div class="nav-tab" data-target="view-cuentas"><i class="fa-solid fa-money-bill-wave"></i> Cuentas</div>
+    <div class="nav-tab" data-target="view-excursiones"><i class="fa-solid fa-bus"></i> Excursiones</div>
     <div class="nav-tab" data-target="view-informes"><i class="fa-solid fa-file-pdf"></i> Informes</div>
     <div class="nav-tab" data-target="view-estadisticas" style="color: var(--primary); font-weight: 600;"><i class="fa-solid fa-chart-pie"></i> Estadísticas</div>
   </nav>
@@ -120,72 +124,212 @@
       
       <div class="menu-grid">
         <div class="menu-card" data-target="view-socios">
-          <img src="/assets/icon_socios-DtjMdEkh.png" alt="Socios" class="card-icon-img">
+          <div class="card-icon icon-socios"><i class="fa-solid fa-users"></i></div>
           <h3>Socios</h3>
           <p>Gestión de altas, bajas y listados generales</p>
         </div>
         
         <div class="menu-card" data-target="view-cuotas">
-          <img src="/assets/icon_cuotas-D9Db6v7A.png" alt="Cuotas" class="card-icon-img">
+          <div class="card-icon icon-cuotas"><i class="fa-solid fa-receipt"></i></div>
           <h3>Cuotas</h3>
           <p>Control de pagos anuales y recaudación</p>
         </div>
         
         <div class="menu-card" data-target="view-actividades">
-          <img src="/assets/icon_actividades-D_5v0wzL.png" alt="Actividades" class="card-icon-img">
+          <div class="card-icon icon-actividades"><i class="fa-solid fa-person-running"></i></div>
           <h3>Actividades</h3>
           <p>Horarios, monitores y salas asignadas</p>
         </div>
         
         <div class="menu-card" data-target="view-inscripciones">
-          <img src="/assets/icon_inscripciones-Bvkx9k9c.png" alt="Inscripciones" class="card-icon-img">
+          <div class="card-icon icon-inscripciones"><i class="fa-solid fa-clipboard-list"></i></div>
           <h3>Inscripciones</h3>
           <p>Apuntar socios a actividades específicas</p>
         </div>
         
         <div class="menu-card" data-target="view-pasar-lista">
-          <img src="/assets/icon_asistencia-0ct08pLi.png" alt="Asistencia" class="card-icon-img">
+          <div class="card-icon icon-asistencia"><i class="fa-solid fa-clipboard-user"></i></div>
           <h3>Asistencia</h3>
           <p>Pasar lista y registrar asistencia de socios</p>
         </div>
         
         <div class="menu-card" data-target="view-monitores">
-          <img src="/assets/icon_monitores-LGPQ2s0j.png" alt="Monitores" class="card-icon-img">
+          <div class="card-icon icon-monitores"><i class="fa-solid fa-chalkboard-user"></i></div>
           <h3>Monitores</h3>
           <p>Gestión de personal y sus accesos PIN</p>
         </div>
 
         <div class="menu-card" data-target="view-salas">
-          <img src="/assets/icon_salas-DGra3_im.png" alt="Salas" class="card-icon-img">
+          <div class="card-icon icon-salas"><i class="fa-solid fa-door-open"></i></div>
           <h3>Salas</h3>
           <p>Configuración de espacios y aforos</p>
         </div>
         
         <div class="menu-card" data-target="view-taqueras">
-          <img src="/assets/icon_taqueras-CrCtNl01.png" alt="Taqueras" class="card-icon-img">
+          <div class="card-icon icon-taqueras"><i class="fa-solid fa-box-archive"></i></div>
           <h3>Taqueras</h3>
           <p>Asignación de taqueras (billar) a socios</p>
         </div>
         
         <div class="menu-card" data-target="view-cuentas">
-          <img src="/assets/icon_cuentas-CwzQPTAU.png" alt="Cuentas" class="card-icon-img">
+          <div class="card-icon icon-cuentas"><i class="fa-solid fa-money-bill-wave"></i></div>
           <h3>Cuentas</h3>
           <p>Gestión de ingresos, gastos y estado de cuentas</p>
         </div>
 
+        <div class="menu-card" data-target="view-excursiones">
+          <div class="card-icon icon-excursiones"><i class="fa-solid fa-bus"></i></div>
+          <h3>Excursiones</h3>
+          <p>Gestión de viajes, autobuses y asientos</p>
+        </div>
+
         <div class="menu-card" data-target="view-informes">
-          <img src="/assets/icon_informes-BQ2vvaz1.png" alt="Informes" class="card-icon-img">
+          <div class="card-icon icon-informes"><i class="fa-solid fa-file-pdf"></i></div>
           <h3>Informes</h3>
           <p>Generación e impresión de listados</p>
         </div>
 
         <div class="menu-card" data-target="view-estadisticas">
-          <div style="font-size: 2.8rem; color: #6366f1; margin-bottom: 0.8rem;"><i class="fa-solid fa-chart-pie"></i></div>
+          <div class="card-icon icon-estadisticas"><i class="fa-solid fa-chart-pie"></i></div>
           <h3>Estadísticas</h3>
           <p>Gráficas y visualización de datos</p>
         </div>
       </div>
     </section>
+
+    
+    <!-- ======================= -->
+    <!-- SECTION: EXCURSIONES    -->
+    <!-- ======================= -->
+    <section id="view-excursiones" class="view-section">
+      <div class="controls-bar" style="display: flex; flex-wrap: wrap; gap: 0.75rem; align-items: center; justify-content: space-between;">
+        <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+          <button class="btn btn-primary" onclick="window.openExcursionesModal('excursiones')"><i class="fa-solid fa-plus"></i> Nueva Excursión</button>
+          <button class="btn btn-outline" onclick="window.openAutobusesPlantillas()"><i class="fa-solid fa-bus-simple"></i> Plantillas de Autobús</button>
+        </div>
+        
+        <div style="display: flex; gap: 0.75rem; flex-wrap: wrap; align-items: center;">
+          <div class="search-box" style="min-width: 220px; margin: 0;">
+            <i class="fa-solid fa-search search-icon"></i>
+            <input type="text" id="excursiones-search" class="search-input" placeholder="🔍 Buscar excursión..." oninput="window.setExcursionFilter('search', this.value)">
+          </div>
+          
+          <select id="excursiones-filter-estado" class="form-control" style="width: auto; min-width: 170px; margin: 0;" onchange="window.setExcursionFilter('estado', this.value)">
+            <option value="todos">Todos los Estados</option>
+            <option value="Planificada">🔵 Planificada</option>
+            <option value="En Curso">🟡 En Curso</option>
+            <option value="Finalizada">🟢 Finalizada</option>
+            <option value="Cancelada">🔴 Cancelada</option>
+          </select>
+        </div>
+      </div>
+      <div class="table-container">
+        <table class="members-table">
+          <thead id="thead-excursiones">
+            <tr>
+              <th onclick="window.setExcursionSort('nombre')" style="cursor: pointer; user-select: none;" title="Ordenar por Nombre">Nombre <span id="sort-icon-nombre">↕</span></th>
+              <th onclick="window.setExcursionSort('fechaInicio')" style="cursor: pointer; user-select: none;" title="Ordenar por Fecha Inicio">Fecha Inicio <span id="sort-icon-fechaInicio">↕</span></th>
+              <th onclick="window.setExcursionSort('fechaFin')" style="cursor: pointer; user-select: none;" title="Ordenar por Fecha Fin">Fecha Fin <span id="sort-icon-fechaFin">↕</span></th>
+              <th onclick="window.setExcursionSort('estado')" style="cursor: pointer; user-select: none;" title="Ordenar por Estado">Estado <span id="sort-icon-estado">↕</span></th>
+              <th onclick="window.setExcursionSort('numeroAutobuses')" style="cursor: pointer; user-select: none;" title="Ordenar por Autobuses">Autobuses <span id="sort-icon-numeroAutobuses">↕</span></th>
+              <th onclick="window.setExcursionSort('capacidadTotal')" style="cursor: pointer; user-select: none;" title="Ordenar por Plazas">Plazas <span id="sort-icon-capacidadTotal">↕</span></th>
+              <th onclick="window.setExcursionSort('costeTotalExcursion')" style="text-align: right; cursor: pointer; user-select: none;" title="Ordenar por Coste">Coste (€) <span id="sort-icon-costeTotalExcursion">↕</span></th>
+              <th onclick="window.setExcursionSort('recaudado')" style="text-align: right; cursor: pointer; user-select: none;" title="Ordenar por Recaudado">Recaudado (€) <span id="sort-icon-recaudado">↕</span></th>
+              <th onclick="window.setExcursionSort('beneficio')" style="text-align: right; cursor: pointer; user-select: none;" title="Ordenar por Beneficio">Beneficio (€) <span id="sort-icon-beneficio">↕</span></th>
+              <th style="text-align: right;">Acciones</th>
+            </tr>
+          </thead>
+          <tbody id="table-excursiones">
+          </tbody>
+        </table>
+      </div>
+    </section>
+  
+
+    
+    <!-- ======================= -->
+    <!-- SECTION: EXCURSION DETALLE -->
+    <!-- ======================= -->
+    <section id="view-excursion-detail" class="view-section">
+      <div class="controls-bar" style="flex-wrap: wrap; gap: 0.5rem;">
+        <button class="btn btn-outline" onclick="window.switchTab('view-excursiones')"><i class="fa-solid fa-arrow-left"></i> Volver</button>
+        <h2 id="detail-excursion-name" style="margin: 0; font-family: 'Outfit'; flex: 1; min-width: 150px; text-align: center;">Excursión</h2>
+        
+        <div class="search-box" style="max-width: 260px;">
+          <i class="fa-solid fa-search search-icon"></i>
+          <input type="text" id="bus-search-passenger" class="search-input" placeholder="🔍 Buscar pasajero en bus..." onkeyup="window.highlightPassengerSeat(this.value)">
+        </div>
+
+        <button class="btn btn-outline" onclick="window.printExcursionBalancePDF()"><i class="fa-solid fa-file-invoice-dollar" style="color: #0284c7;"></i> Balance PDF</button>
+        <button class="btn btn-outline" onclick="window.exportExcursionExcel()"><i class="fa-solid fa-table" style="color: #10b981;"></i> Balance y Pasajeros (.ods)</button>
+        <button class="btn btn-outline" onclick="window.printExcursionPDF()"><i class="fa-solid fa-file-pdf" style="color: #ef4444;"></i> Hoja de Control PDF</button>
+        <button class="btn btn-primary" id="btn-add-autobus" onclick="window.addAutobusToExcursion()"><i class="fa-solid fa-bus"></i> Añadir Autobús</button>
+      </div>
+      
+      <div class="dashboard-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-bottom: 1rem;">
+        <div class="summary-card info">
+          <div class="summary-icon"><i class="fa-solid fa-users"></i></div>
+          <div class="summary-info">
+            <span class="summary-label">Plazas Ocupadas</span>
+            <span class="summary-value" id="detail-plazas-ocupadas">0 / 0</span>
+          </div>
+        </div>
+        <div class="summary-card">
+          <div class="summary-icon" style="background: #e0f2fe; color: #0284c7;"><i class="fa-solid fa-receipt"></i></div>
+          <div class="summary-info">
+            <span class="summary-label">Coste Total Excursión</span>
+            <span class="summary-value" id="detail-coste-total">0.00 €</span>
+          </div>
+        </div>
+        <div class="summary-card success">
+          <div class="summary-icon"><i class="fa-solid fa-money-bill-trend-up"></i></div>
+          <div class="summary-info">
+            <span class="summary-label">Recaudado / Pendiente</span>
+            <span class="summary-value" id="detail-recaudado">0 € / 0 €</span>
+          </div>
+        </div>
+        <div class="summary-card" id="card-detail-beneficio">
+          <div class="summary-icon" id="icon-detail-beneficio" style="background: #dcfce7; color: #16a34a;"><i class="fa-solid fa-chart-line"></i></div>
+          <div class="summary-info">
+            <span class="summary-label">Beneficio / Margen Neto</span>
+            <span class="summary-value" id="detail-beneficio">0.00 €</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="table-container" style="padding: 1rem; background: white; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); margin-bottom: 1.5rem;">
+        <h3>Lista de Autobuses</h3>
+        <div id="excursion-autobuses-list" style="display: flex; flex-direction: column; gap: 1rem;">
+          <!-- Se generan dinámicamente -->
+        </div>
+      </div>
+
+      <!-- LISTA DE ESPERA -->
+      <div class="table-container" style="padding: 1rem; background: white; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+          <h3 style="margin: 0;"><i class="fa-solid fa-clock-rotate-left"></i> Lista de Espera <span class="badge badge-warning" id="badge-lista-espera-count">0</span></h3>
+          <button class="btn btn-outline btn-sm" id="btn-add-lista-espera" onclick="window.openAddListaEspera()"><i class="fa-solid fa-user-plus"></i> Añadir a Lista de Espera</button>
+        </div>
+        <table class="data-table" style="width: 100%;">
+          <thead>
+            <tr>
+              <th style="width: 50px;">#</th>
+              <th>Pasajero</th>
+              <th>Tipo</th>
+              <th>DNI</th>
+              <th>Teléfono</th>
+              <th>Observaciones / Preferencias</th>
+              <th>Fecha Solicitud</th>
+              <th style="text-align: right;">Acciones</th>
+            </tr>
+          </thead>
+          <tbody id="table-lista-espera">
+            <!-- Rendered by JS -->
+          </tbody>
+        </table>
+      </div>
+    </section>
+
 
     <!-- ======================= -->
     <!-- SECTION: CUOTAS         -->
@@ -532,6 +676,7 @@
         <button class="btn btn-outline btn-sm" data-tab="stats-edades">Edades</button>
         <button class="btn btn-outline btn-sm" data-tab="stats-cuotas">Cuotas</button>
         <button class="btn btn-outline btn-sm" data-tab="stats-actividades">Actividades</button>
+        <button class="btn btn-outline btn-sm" data-tab="stats-excursiones"><i class="fa-solid fa-bus" style="margin-right: 4px;"></i> Excursiones</button>
         <button class="btn btn-outline btn-sm" data-tab="stats-evolucion">Evolución</button>
         <button class="btn btn-primary btn-sm" id="btn-refresh-stats" style="margin-left: auto;">
           <i class="fa-solid fa-rotate-right"></i> Actualizar
@@ -571,6 +716,65 @@
           <canvas id="chart-actividades"></canvas>
         </div>
 
+        <!-- Tab: Excursiones -->
+        <div id="stats-excursiones" class="stats-tab-content" style="display: none; width: 100%; max-width: 920px; height: 100%;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem; flex-wrap: wrap; gap: 0.75rem;">
+            <h3 style="color: var(--primary); margin: 0; font-size: 1.25rem;">Rendimiento Contable y Ocupación</h3>
+            
+            <div style="display: flex; gap: 0.75rem; align-items: center; flex-wrap: wrap;">
+              <div style="display: flex; align-items: center; gap: 0.4rem;">
+                <label for="stats-excursiones-estado" style="font-size: 0.82rem; font-weight: 600; color: #475569; margin: 0;">Estado:</label>
+                <select id="stats-excursiones-estado" class="form-control" style="width: auto; padding: 0.25rem 0.6rem; font-size: 0.85rem;">
+                  <option value="">Todos</option>
+                  <option value="Planificada">Planificada</option>
+                  <option value="En Curso">En Curso</option>
+                  <option value="Finalizada">Finalizada</option>
+                  <option value="Cancelada">Cancelada</option>
+                </select>
+              </div>
+              <div style="display: flex; align-items: center; gap: 0.4rem;">
+                <label for="stats-excursiones-year" style="font-size: 0.82rem; font-weight: 600; color: #475569; margin: 0;">Año:</label>
+                <select id="stats-excursiones-year" class="form-control" style="width: auto; padding: 0.25rem 0.6rem; font-size: 0.85rem;">
+                  <option value="">Todos</option>
+                </select>
+              </div>
+            </div>
+          </div>
+          
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 0.75rem; width: 100%; margin-bottom: 1.75rem;">
+            <div style="background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 10px; padding: 0.85rem 0.5rem; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
+              <div style="font-size: 0.72rem; text-transform: uppercase; color: #64748b; font-weight: 700; letter-spacing: 0.03em; margin-bottom: 0.35rem;">Total Excursiones</div>
+              <div style="font-size: 1.35rem; font-weight: 800; color: #0f172a; line-height: 1.2;" id="stats-exc-total-count">0</div>
+            </div>
+            <div style="background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 10px; padding: 0.85rem 0.5rem; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
+              <div style="font-size: 0.72rem; text-transform: uppercase; color: #64748b; font-weight: 700; letter-spacing: 0.03em; margin-bottom: 0.35rem;">Coste Total</div>
+              <div style="font-size: 1.2rem; font-weight: 800; color: #475569; line-height: 1.2; white-space: nowrap;" id="stats-exc-total-coste">0,00 €</div>
+            </div>
+            <div style="background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 10px; padding: 0.85rem 0.5rem; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
+              <div style="font-size: 0.72rem; text-transform: uppercase; color: #166534; font-weight: 700; letter-spacing: 0.03em; margin-bottom: 0.35rem;">Total Recaudado</div>
+              <div style="font-size: 1.2rem; font-weight: 800; color: #15803d; line-height: 1.2; white-space: nowrap;" id="stats-exc-total-recaudado">0,00 €</div>
+            </div>
+            <div style="background: #fef2f2; border: 1px solid #fecaca; border-radius: 10px; padding: 0.85rem 0.5rem; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
+              <div style="font-size: 0.72rem; text-transform: uppercase; color: #991b1b; font-weight: 700; letter-spacing: 0.03em; margin-bottom: 0.35rem;">Total Pendiente</div>
+              <div style="font-size: 1.2rem; font-weight: 800; color: #b91c1c; line-height: 1.2; white-space: nowrap;" id="stats-exc-total-pendiente">0,00 €</div>
+            </div>
+            <div style="background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 10px; padding: 0.85rem 0.5rem; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
+              <div style="font-size: 0.72rem; text-transform: uppercase; color: #1e40af; font-weight: 700; letter-spacing: 0.03em; margin-bottom: 0.35rem;">Beneficio Neto Global</div>
+              <div style="font-size: 1.2rem; font-weight: 800; line-height: 1.2; white-space: nowrap;" id="stats-exc-total-beneficio">+0,00 €</div>
+            </div>
+          </div>
+
+          <div style="margin-bottom: 2rem;">
+            <h4 style="color: #334155; margin-bottom: 0.75rem; font-size: 1rem;"><i class="fa-solid fa-chart-simple" style="color: var(--primary); margin-right: 0.4rem;"></i> Balance Financiero por Excursión (Coste vs Recaudado vs Beneficio)</h4>
+            <canvas id="chart-excursiones-finanzas" style="max-height: 320px;"></canvas>
+          </div>
+
+          <div>
+            <h4 style="color: #334155; margin-bottom: 0.75rem; font-size: 1rem;"><i class="fa-solid fa-users" style="color: var(--primary); margin-right: 0.4rem;"></i> Ocupación de Plazas por Excursión</h4>
+            <canvas id="chart-excursiones-plazas" style="max-height: 280px;"></canvas>
+          </div>
+        </div>
+
         <!-- Tab: Evolución -->
         <div id="stats-evolucion" class="stats-tab-content" style="display: none; width: 100%; max-width: 800px; height: 100%;">
           <h3 style="text-align: center; color: var(--primary); margin-bottom: 1rem;">Evolución Histórica de Altas de Socios</h3>
@@ -581,173 +785,177 @@
     </section>
 
     <!-- ======================= -->
-    <!-- SECTION: IMPORTAR CSV   -->
+    <!-- SECTION: CONFIGURACION  -->
     <!-- ======================= -->
     <section id="view-importar" class="view-section">
       <div class="welcome-header">
-        <h1>Configuración y Datos</h1>
-        <p>Ajustes del sistema, importación masiva y copias de seguridad</p>
+        <h1>Configuración</h1>
+        <p>Importación masiva de datos desde archivos Excel o CSV</p>
       </div>
 
-      <div class="menu-grid" style="margin-bottom: 2rem;">
-        <div class="menu-card" id="btn-backup-data" style="cursor: pointer;">
-          <i class="fa-solid fa-download" style="font-size: 2.5rem; color: #4a90e2; margin-bottom: 1rem; display: block; text-align: center;"></i>
-          <h3>Copia de Seguridad</h3>
-          <p>Descargar todos los datos a tu computadora (JSON)</p>
-        </div>
-
-        <div class="menu-card" onclick="document.getElementById('config-import-wrapper').style.display='block'; document.getElementById('config-cleanup-wrapper').style.display='none'; setTimeout(()=>document.getElementById('config-import-wrapper').scrollIntoView({behavior: 'smooth', block: 'start'}), 100);" style="cursor: pointer;">
-          <i class="fa-solid fa-file-import" style="font-size: 2.5rem; color: var(--primary); margin-bottom: 1rem; display: block; text-align: center;"></i>
-          <h3>Importar Datos</h3>
-          <p>Importación masiva desde Excel o CSV</p>
-        </div>
-
-        <div class="menu-card" onclick="document.getElementById('config-cleanup-wrapper').style.display='block'; document.getElementById('config-import-wrapper').style.display='none'; setTimeout(()=>document.getElementById('config-cleanup-wrapper').scrollIntoView({behavior: 'smooth', block: 'start'}), 100);" style="cursor: pointer;">
-          <i class="fa-solid fa-trash-can" style="font-size: 2.5rem; color: var(--danger-color, #ef4444); margin-bottom: 1rem; display: block; text-align: center;"></i>
-          <h3>Limpieza Histórica</h3>
-          <p>Eliminar permanentemente registros antiguos</p>
-        </div>
-
-        <div class="menu-card" onclick="if(confirm('¿Estás seguro de que quieres marcar todos los pagos trimestrales de todas las inscripciones como Pendientes? Esta acción no se puede deshacer.')) { if(window.resetAllTrimestrales) window.resetAllTrimestrales(); }" style="cursor: pointer;">
-          <i class="fa-solid fa-money-bill-transfer" style="font-size: 2.5rem; color: #f59e0b; margin-bottom: 1rem; display: block; text-align: center;"></i>
-          <h3>Resetear Trimestres</h3>
-          <p>Dejar "pendiente de cobro" todos los pagos trimestrales</p>
-        </div>
-      </div>
-
-      <div id="config-import-wrapper" style="display: none; padding-top: 1rem; border-top: 1px solid var(--border-light);">
+      <div id="config-import-wrapper" style="padding-top: 0.5rem;">
         <h2 style="margin-bottom: 1.5rem; font-size: 1.25rem;"><i class="fa-solid fa-file-import" style="color: var(--primary); margin-right: 0.5rem;"></i> Importador de Datos Inteligente</h2>
 
         <div class="import-container">
-        <div class="import-instructions">
-          <h3><i class="fa-solid fa-circle-info"></i> Instrucciones</h3>
-          <ol>
-            <li>Selecciona el tipo de datos que deseas importar a la derecha.</li>
-            <li>Sube o arrastra tu archivo Excel (<code>.xlsx</code>, <code>.xls</code>) o <code>.csv</code>.</li>
-            <li>El sistema emparejará automáticamente las columnas. Si difieren, selecciónalas manualmente en el panel de mapeo.</li>
-            <li>Revisa la vista previa de datos para comprobar que todo está alineado.</li>
-            <li>Pulsa en <strong>Iniciar Importación</strong>.</li>
-          </ol>
-          <div class="field-guide" id="field-guide-display">
-            <!-- Dynamically updated -->
+          <div class="import-instructions">
+            <h3><i class="fa-solid fa-circle-info"></i> Instrucciones</h3>
+            <ol>
+              <li>Selecciona el tipo de datos que deseas importar a la derecha.</li>
+              <li>Sube o arrastra tu archivo Excel (<code>.xlsx</code>, <code>.xls</code>) o <code>.csv</code>.</li>
+              <li>El sistema emparejará automáticamente las columnas. Si difieren, selecciónalas manualmente en el panel de mapeo.</li>
+              <li>Revisa la vista previa de datos para comprobar que todo está alineado.</li>
+              <li>Pulsa en <strong>Iniciar Importación</strong>.</li>
+            </ol>
+            <div class="field-guide" id="field-guide-display">
+              <!-- Dynamically updated -->
+            </div>
+          </div>
+
+          <div class="import-form-card">
+            <div class="form-group">
+              <label class="form-label">¿Qué quieres importar?</label>
+              <select id="import-collection-select" class="form-control" data-action="update-import-guide">
+                <option value="socios">Socios</option>
+                <option value="monitores">Monitores</option>
+                <option value="actividades">Actividades</option>
+                <option value="salas">Salas</option>
+                <option value="inscripciones">Inscripciones</option>
+                <option value="cuotas_pagos">Cuotas pagadas (últimos 3 años)</option>
+              </select>
+            </div>
+
+            <div class="form-group" id="import-update-existing-group" style="margin-top: -0.5rem; margin-bottom: 1.5rem;">
+              <label style="display: flex; align-items: center; gap: 0.5rem; font-size: 0.9rem; cursor: pointer;">
+                <input type="checkbox" id="import-update-existing" style="width: 1rem; height: 1rem;">
+                Actualizar registros si ya existen (por Número de Socio)
+              </label>
+              <p style="font-size: 0.8rem; color: var(--text-muted); margin-top: 0.25rem;">Si marcas esto y el socio ya existe, se sobrescribirán solo los campos que mapees (ej. Fecha de Nacimiento).</p>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">Archivo de origen:</label>
+              <div class="import-dropzone" id="import-dropzone" onclick="document.getElementById('import-file-input').click()">
+                <input type="file" id="import-file-input" accept=".xlsx,.xls,.csv" style="display: none;">
+                <i class="fa-solid fa-file-excel dropzone-icon" style="font-size: 2.5rem; color: var(--primary); margin-bottom: 0.75rem;"></i>
+                <p class="dropzone-text" style="font-weight: 600; font-size: 0.95rem; color: var(--text-muted); margin: 0;">
+                  Arrastra tu Excel o CSV aquí, o <span style="color: var(--primary); text-decoration: underline; cursor: pointer;">haz clic para seleccionarlo</span>
+                </p>
+              </div>
+              
+              <div class="selected-file-info" id="selected-file-info" style="display: none; align-items: center; justify-content: space-between; background: var(--bg-main); padding: 0.75rem 1rem; border-radius: var(--radius-sm); border: 2px solid var(--border-light); margin-top: 1rem;">
+                <span class="file-name" style="font-weight: 700; color: var(--text-main); font-size: 0.95rem;">
+                  <i class="fa-solid fa-file-circle-check" style="color: var(--success); margin-right: 0.5rem;"></i> <span id="file-name-text">archivo.xlsx</span>
+                </span>
+                <button type="button" class="btn btn-outline btn-sm" data-action="clear-import-file" style="min-height: auto; padding: 4px 10px; font-size: 0.8rem; border-color: var(--danger); color: var(--danger);">
+                  <i class="fa-solid fa-trash"></i> Quitar
+                </button>
+              </div>
+            </div>
+
+            <div class="form-group" id="sheet-select-group" style="display: none;">
+              <label class="form-label">Seleccionar Hoja de Trabajo:</label>
+              <select id="import-sheet-select" class="form-control" data-action="handle-sheet-select"></select>
+            </div>
+            <!-- Column mapping -->
+            <div id="import-mapping-section" style="display: none; margin-top: 1.5rem; border-top: 1px solid var(--border-light); padding-top: 1.25rem;">
+              <h3 style="font-size: 1.15rem; margin-bottom: 0.5rem; color: var(--primary); display: flex; align-items: center; gap: 0.5rem;">
+                <i class="fa-solid fa-shuffle"></i> Emparejar Columnas
+              </h3>
+              <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 1rem;">Asocia cada campo de la base de datos con una columna de tu archivo:</p>
+              <div id="import-mapping-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 0.6rem; margin-bottom: 1.5rem;">
+                <!-- Dynamic selectors -->
+              </div>
+            </div>
+
+            <!-- Preview -->
+            <div id="import-preview-section" style="display: none; margin-top: 1.5rem; border-top: 1px solid var(--border-light); padding-top: 1.25rem;">
+              <h3 style="font-size: 1.15rem; margin-bottom: 0.75rem; color: var(--primary); display: flex; align-items: center; gap: 0.5rem;">
+                <i class="fa-solid fa-eye"></i> Vista Previa (primeros 3 registros)
+              </h3>
+              <div class="table-container" style="max-height: 200px; margin-bottom: 1.25rem; border-radius: var(--radius-sm); border: 1.5px solid var(--border-light);">
+                <table class="members-table" style="font-size: 0.9rem;">
+                  <thead id="import-preview-head"></thead>
+                  <tbody id="import-preview-body"></tbody>
+                </table>
+              </div>
+            </div>
+
+            <div id="import-status" style="margin-bottom: 1.25rem; font-weight: 700; font-size: 0.95rem; min-height: 1.5em;"></div>
+
+            <button class="btn btn-primary btn-block" id="btn-start-import" data-action="execute-import" disabled style="opacity: 0.5; cursor: not-allowed; width: 100%;">
+              <i class="fa-solid fa-rocket"></i> Iniciar Importación Masiva
+            </button>
           </div>
         </div>
+      </div>
+    </section>
 
-        <div class="import-form-card">
-          <div class="form-group">
-            <label class="form-label">¿Qué quieres importar?</label>
-            <select id="import-collection-select" class="form-control" data-action="update-import-guide">
-              <option value="socios">Socios</option>
-              <option value="monitores">Monitores</option>
-              <option value="actividades">Actividades</option>
-              <option value="salas">Salas</option>
-              <option value="inscripciones">Inscripciones</option>
-              <option value="cuotas_pagos">Cuotas pagadas (últimos 3 años)</option>
-            </select>
-          </div>
+    <!-- ================================== -->
+    <!-- SECTION: PROCESOS ESPECIALES       -->
+    <!-- ================================== -->
+    <section id="view-procesos-especiales" class="view-section">
+      <div class="welcome-header">
+        <h1>Procesos Especiales</h1>
+        <p>Copias de seguridad, restauración del sistema y mantenimiento de datos históricos</p>
+      </div>
 
-          <div class="form-group" id="import-update-existing-group" style="margin-top: -0.5rem; margin-bottom: 1.5rem;">
-            <label style="display: flex; align-items: center; gap: 0.5rem; font-size: 0.9rem; cursor: pointer;">
-              <input type="checkbox" id="import-update-existing" style="width: 1rem; height: 1rem;">
-              Actualizar registros si ya existen (por Número de Socio)
-            </label>
-            <p style="font-size: 0.8rem; color: var(--text-muted); margin-top: 0.25rem;">Si marcas esto y el socio ya existe, se sobrescribirán solo los campos que mapees (ej. Fecha de Nacimiento).</p>
-          </div>
+      <div class="menu-grid" style="margin-bottom: 2rem;">
+        <div class="menu-card" id="btn-backup-data" style="cursor: pointer; text-align: center;">
+          <i class="fa-solid fa-download" style="font-size: 2.5rem; color: #4a90e2; margin-bottom: 1rem; display: block;"></i>
+          <h3>Copia de Seguridad</h3>
+          <p>Descargar todos los datos a tu computadora (JSON)</p>
+          <span style="display: inline-block; margin-top: 0.5rem; font-size: 0.75rem; color: var(--text-muted); background: #f1f5f9; padding: 3px 8px; border-radius: 4px;">Requiere escribir "COPIAR"</span>
+        </div>
 
-          <div class="form-group">
-            <label class="form-label">Archivo de origen:</label>
-            <div class="import-dropzone" id="import-dropzone" onclick="document.getElementById('import-file-input').click()">
-              <input type="file" id="import-file-input" accept=".xlsx,.xls,.csv" style="display: none;">
-              <i class="fa-solid fa-file-excel dropzone-icon" style="font-size: 2.5rem; color: var(--primary); margin-bottom: 0.75rem;"></i>
-              <p class="dropzone-text" style="font-weight: 600; font-size: 0.95rem; color: var(--text-muted); margin: 0;">
-                Arrastra tu Excel o CSV aquí, o <span style="color: var(--primary); text-decoration: underline; cursor: pointer;">haz clic para seleccionarlo</span>
-              </p>
-            </div>
-            
-            <div class="selected-file-info" id="selected-file-info" style="display: none; align-items: center; justify-content: space-between; background: var(--bg-main); padding: 0.75rem 1rem; border-radius: var(--radius-sm); border: 2px solid var(--border-light); margin-top: 1rem;">
-              <span class="file-name" style="font-weight: 700; color: var(--text-main); font-size: 0.95rem;">
-                <i class="fa-solid fa-file-circle-check" style="color: var(--success); margin-right: 0.5rem;"></i> <span id="file-name-text">archivo.xlsx</span>
-              </span>
-              <button type="button" class="btn btn-outline btn-sm" data-action="clear-import-file" style="min-height: auto; padding: 4px 10px; font-size: 0.8rem; border-color: var(--danger); color: var(--danger);">
-                <i class="fa-solid fa-trash"></i> Quitar
-              </button>
-            </div>
-          </div>
+        <div class="menu-card" id="btn-restore-data" style="cursor: pointer; text-align: center;">
+          <i class="fa-solid fa-database" style="font-size: 2.5rem; color: #f59e0b; margin-bottom: 1rem; display: block;"></i>
+          <h3>Restaurar Copia de Seguridad</h3>
+          <p>Restablecer la base de datos desde un archivo JSON</p>
+          <span style="display: inline-block; margin-top: 0.5rem; font-size: 0.75rem; color: #b45309; background: #fef3c7; padding: 3px 8px; border-radius: 4px;">Requiere escribir "SOBREESCRIBIR"</span>
+        </div>
 
-          <div class="form-group" id="sheet-select-group" style="display: none;">
-            <label class="form-label">Seleccionar Hoja de Trabajo:</label>
-            <select id="import-sheet-select" class="form-control" data-action="handle-sheet-select"></select>
-          </div>
-          <!-- Column mapping -->
-          <div id="import-mapping-section" style="display: none; margin-top: 1.5rem; border-top: 1px solid var(--border-light); padding-top: 1.25rem;">
-            <h3 style="font-size: 1.15rem; margin-bottom: 0.5rem; color: var(--primary); display: flex; align-items: center; gap: 0.5rem;">
-              <i class="fa-solid fa-shuffle"></i> Emparejar Columnas
-            </h3>
-            <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 1rem;">Asocia cada campo de la base de datos con una columna de tu archivo:</p>
-            <div id="import-mapping-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 0.6rem; margin-bottom: 1.5rem;">
-              <!-- Dynamic selectors -->
-            </div>
-          </div>
-
-          <!-- Preview -->
-          <div id="import-preview-section" style="display: none; margin-top: 1.5rem; border-top: 1px solid var(--border-light); padding-top: 1.25rem;">
-            <h3 style="font-size: 1.15rem; margin-bottom: 0.75rem; color: var(--primary); display: flex; align-items: center; gap: 0.5rem;">
-              <i class="fa-solid fa-eye"></i> Vista Previa (primeros 3 registros)
-            </h3>
-            <div class="table-container" style="max-height: 200px; margin-bottom: 1.25rem; border-radius: var(--radius-sm); border: 1.5px solid var(--border-light);">
-              <table class="members-table" style="font-size: 0.9rem;">
-                <thead id="import-preview-head"></thead>
-                <tbody id="import-preview-body"></tbody>
-              </table>
-            </div>
-          </div>
-
-          <div id="import-status" style="margin-bottom: 1.25rem; font-weight: 700; font-size: 0.95rem; min-height: 1.5em;"></div>
-
-          <button class="btn btn-primary btn-block" id="btn-start-import" data-action="execute-import" disabled style="opacity: 0.5; cursor: not-allowed; width: 100%;">
-            <i class="fa-solid fa-rocket"></i> Iniciar Importación Masiva
-          </button>
+        <div class="menu-card" onclick="document.getElementById('config-cleanup-wrapper').style.display='block'; setTimeout(()=>document.getElementById('config-cleanup-wrapper').scrollIntoView({behavior: 'smooth', block: 'start'}), 100);" style="cursor: pointer; text-align: center;">
+          <i class="fa-solid fa-trash-can" style="font-size: 2.5rem; color: var(--danger-color, #ef4444); margin-bottom: 1rem; display: block;"></i>
+          <h3>Limpieza Histórica</h3>
+          <p>Eliminar permanentemente registros antiguos</p>
+          <span style="display: inline-block; margin-top: 0.5rem; font-size: 0.75rem; color: #b91c1c; background: #fee2e2; padding: 3px 8px; border-radius: 4px;">Requiere escribir "ELIMINAR"</span>
         </div>
       </div>
 
-      <!-- BOTON OCULTO DE RESTAURACIÓN -->
-      <div style="text-align: right; margin-top: 30px; opacity: 0.2; cursor: pointer; transition: opacity 0.3s;" id="btn-restore-data-hidden" onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.2'">
-        <i class="fa-solid fa-database"></i> Restaurar Copia de Seguridad
-      </div>
       <input type="file" id="restore-file-input" accept=".json" style="display: none;">
-      </div>
 
       <div id="config-cleanup-wrapper" style="display: none; padding-top: 1rem; border-top: 1px solid var(--border-light);">
         <h2 style="margin-bottom: 1.5rem; font-size: 1.25rem; color: var(--danger-color, #ef4444);"><i class="fa-solid fa-trash-can" style="margin-right: 0.5rem;"></i> Limpieza de Datos Históricos</h2>
         <div class="import-container" style="border: 2px solid #fecaca; background: #fef2f2;">
-        <div class="import-instructions" style="border-right-color: #fca5a5;">
-          <h3 style="color: #b91c1c;"><i class="fa-solid fa-triangle-exclamation"></i> ¡Atención!</h3>
-          <p style="color: #991b1b; font-size: 0.9rem; margin-bottom: 1rem;">Esta sección permite <strong>eliminar permanentemente</strong> registros de años anteriores.</p>
-          <ul style="color: #991b1b; font-size: 0.9rem; padding-left: 1.2rem; margin-bottom: 1rem;">
-            <li>Esta acción <strong>NO se puede deshacer</strong>.</li>
-            <li>Te recomendamos descargar una <strong>Copia de Seguridad</strong> (desde el panel de Inicio) antes de proceder.</li>
-          </ul>
-        </div>
-        <div class="import-form-card">
-          <div class="form-group">
-            <label class="form-label" style="color: #991b1b;">¿Qué datos deseas eliminar?</label>
-            <select id="cleanup-collection-select" class="form-control" style="border-color: #fca5a5; background: white;">
-              <option value="cuotas_pagos">Cuotas Pagadas</option>
-              <option value="asistencias">Asistencias a Actividades</option>
-              <option value="cuentas">Movimientos de Cuentas</option>
-            </select>
+          <div class="import-instructions" style="border-right-color: #fca5a5;">
+            <h3 style="color: #b91c1c;"><i class="fa-solid fa-triangle-exclamation"></i> ¡Atención!</h3>
+            <p style="color: #991b1b; font-size: 0.9rem; margin-bottom: 1rem;">Esta sección permite <strong>eliminar permanentemente</strong> registros de años anteriores.</p>
+            <ul style="color: #991b1b; font-size: 0.9rem; padding-left: 1.2rem; margin-bottom: 1rem;">
+              <li>Esta acción <strong>NO se puede deshacer</strong>.</li>
+              <li>Te recomendamos descargar una <strong>Copia de Seguridad</strong> antes de proceder.</li>
+            </ul>
           </div>
-          <div class="form-group">
-            <label class="form-label" style="color: #991b1b;">Selecciona el Año:</label>
-            <select id="cleanup-year-select" class="form-control" style="border-color: #fca5a5; background: white;">
-              <!-- Se llenará dinámicamente -->
-            </select>
+          <div class="import-form-card">
+            <div class="form-group">
+              <label class="form-label" style="color: #991b1b;">¿Qué datos deseas eliminar?</label>
+              <select id="cleanup-collection-select" class="form-control" style="border-color: #fca5a5; background: white;" onchange="document.getElementById('cleanup-year-group').style.display = this.value === 'inscripciones_trimestres' ? 'none' : 'block';">
+                <option value="cuotas_pagos">Cuotas Pagadas (Socios)</option>
+                <option value="inscripciones_trimestres">Pagos de Cuotas Trimestrales (Actividades)</option>
+                <option value="asistencias">Asistencias a Actividades</option>
+                <option value="cuentas">Movimientos de Cuentas</option>
+              </select>
+            </div>
+            <div class="form-group" id="cleanup-year-group">
+              <label class="form-label" style="color: #991b1b;">Selecciona el Año:</label>
+              <select id="cleanup-year-select" class="form-control" style="border-color: #fca5a5; background: white;">
+                <!-- Se llenará dinámicamente -->
+              </select>
+            </div>
+            <button class="btn btn-danger btn-block" data-action="execute-cleanup" style="width: 100%; margin-top: 1rem;">
+              <i class="fa-solid fa-skull-crossbones"></i> Eliminar Registros Definitivamente
+            </button>
           </div>
-          <button class="btn btn-danger btn-block" data-action="execute-cleanup" style="width: 100%; margin-top: 1rem;">
-            <i class="fa-solid fa-skull-crossbones"></i> Eliminar Registros Definitivamente
-          </button>
         </div>
-      </div>
       </div>
     </section>
 
@@ -950,6 +1158,11 @@
         <div class="icon"><i class="fa-solid fa-file-invoice-dollar"></i></div>
         <div class="title">Detalles Cuentas</div>
         <div class="desc">Ingresos y Gastos al completo</div>
+      </div>
+      <div class="report-card" data-type="excursiones_resumen" onclick="window.selectReportType('excursiones_resumen')">
+        <div class="icon"><i class="fa-solid fa-bus" style="color: #0284c7;"></i></div>
+        <div class="title">Resumen Excursiones</div>
+        <div class="desc">Balance contable: costes, recaudado y beneficio</div>
       </div>
       <div class="report-card" data-type="personalizado" onclick="window.selectReportType('personalizado')">
         <div class="icon"><i class="fa-solid fa-sliders"></i></div>
@@ -1379,7 +1592,7 @@
                   <div style="margin-bottom: 0.5rem;">
                     <span id="pago-T1-estado" style="display: inline-block; padding: 0.2rem 0.5rem; border-radius: 1rem; font-size: 0.8rem; font-weight: bold; margin-bottom: 0.5rem;">Pendiente</span>
                   </div>
-                  <label class="form-label" style="font-size: 0.8rem;">Importe Cobrado (€)</label>
+                  <label class="form-label" style="font-size: 0.8rem;">Importe (€)</label>
                   <input type="number" id="inscripciones-pago-T1-importe" class="form-control" step="0.01" style="margin-bottom: 0.5rem;" oninput="if(window.actualizarBotonesPago) window.actualizarBotonesPago('T1')">
                   <div style="display: flex; gap: 0.5rem;">
                     <button type="button" id="btn-pago-T1" class="btn btn-primary" style="flex: 1; padding: 0.4rem; font-size: 0.85rem;" onclick="window.marcarPago('T1')">Cobrar</button>
@@ -1393,7 +1606,7 @@
                   <div style="margin-bottom: 0.5rem;">
                     <span id="pago-T2-estado" style="display: inline-block; padding: 0.2rem 0.5rem; border-radius: 1rem; font-size: 0.8rem; font-weight: bold; margin-bottom: 0.5rem;">Pendiente</span>
                   </div>
-                  <label class="form-label" style="font-size: 0.8rem;">Importe Cobrado (€)</label>
+                  <label class="form-label" style="font-size: 0.8rem;">Importe (€)</label>
                   <input type="number" id="inscripciones-pago-T2-importe" class="form-control" step="0.01" style="margin-bottom: 0.5rem;" oninput="if(window.actualizarBotonesPago) window.actualizarBotonesPago('T2')">
                   <div style="display: flex; gap: 0.5rem;">
                     <button type="button" id="btn-pago-T2" class="btn btn-primary" style="flex: 1; padding: 0.4rem; font-size: 0.85rem;" onclick="window.marcarPago('T2')">Cobrar</button>
@@ -1407,7 +1620,7 @@
                   <div style="margin-bottom: 0.5rem;">
                     <span id="pago-T3-estado" style="display: inline-block; padding: 0.2rem 0.5rem; border-radius: 1rem; font-size: 0.8rem; font-weight: bold; margin-bottom: 0.5rem;">Pendiente</span>
                   </div>
-                  <label class="form-label" style="font-size: 0.8rem;">Importe Cobrado (€)</label>
+                  <label class="form-label" style="font-size: 0.8rem;">Importe (€)</label>
                   <input type="number" id="inscripciones-pago-T3-importe" class="form-control" step="0.01" style="margin-bottom: 0.5rem;" oninput="if(window.actualizarBotonesPago) window.actualizarBotonesPago('T3')">
                   <div style="display: flex; gap: 0.5rem;">
                     <button type="button" id="btn-pago-T3" class="btn btn-primary" style="flex: 1; padding: 0.4rem; font-size: 0.85rem;" onclick="window.marcarPago('T3')">Cobrar</button>
@@ -1478,6 +1691,344 @@
         </div>
 
       </div>
+    </div>
+  </div>
+
+  
+  <!-- MODAL NUEVA EXCURSIÓN -->
+  <div id="modal-excursion" class="modal-overlay">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2 class="modal-title" id="excursion-modal-title">Nueva Excursión</h2>
+        <button type="button" class="btn-close" onclick="window.closeExcursionesModal('excursion')">&times;</button>
+      </div>
+      <form id="form-excursiones" onsubmit="window.saveExcursion(event)">
+        <div class="modal-body">
+          <input type="hidden" id="excursiones-id">
+          <div class="form-grid">
+            <div class="form-group">
+              <label class="form-label">Nombre / Lugar *</label>
+              <input type="text" id="excursiones-nombre" class="form-control" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Estado</label>
+              <select id="excursiones-estado" class="form-control" required>
+                <option value="Planificada">Planificada</option>
+                <option value="En Curso">En Curso</option>
+                <option value="Finalizada">Finalizada</option>
+                <option value="Cancelada">Cancelada</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Fecha Inicio *</label>
+              <input type="date" id="excursiones-fechaInicio" class="form-control" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Fecha Fin *</label>
+              <input type="date" id="excursiones-fechaFin" class="form-control" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Lugar de Salida</label>
+              <input type="text" id="excursiones-lugarSalida" class="form-control" placeholder="Ej. Puerta Can Arús, Plaza...">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Hora de Salida</label>
+              <input type="time" id="excursiones-horaSalida" class="form-control">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Precio / Coste por Persona (€) *</label>
+              <input type="number" step="0.01" id="excursiones-costePorPersona" class="form-control" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Suplemento Hab. Individual (€)</label>
+              <input type="number" step="0.01" id="excursiones-suplementoIndividual" class="form-control" placeholder="0.00" value="0">
+            </div>
+            <div class="form-group" style="grid-column: 1 / -1;">
+              <label class="form-label">Coste Total de la Excursión / Gastos (€)</label>
+              <input type="number" step="0.01" id="excursiones-costeTotalExcursion" class="form-control" placeholder="0.00" value="0">
+            </div>
+            <div class="form-group" style="grid-column: 1 / -1;">
+              <label class="form-label">Notas / Observaciones</label>
+              <textarea id="excursiones-notas" class="form-control" rows="3"></textarea>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline" onclick="window.closeExcursionesModal('excursion')">Cancelar</button>
+          <button type="submit" class="btn btn-primary"><i class="fa-solid fa-save"></i> Guardar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  
+  <!-- MODAL PLANTILLAS AUTOBUS (GESTIÓN) -->
+  <div id="modal-plantillas-list" class="modal-overlay">
+    <div class="modal-content" style="max-width: 750px;">
+      <div class="modal-header">
+        <h2 class="modal-title"><i class="fa-solid fa-bus-simple"></i> Plantillas de Autobuses</h2>
+        <button type="button" class="btn-close" onclick="window.closeExcursionesModal('plantillas-list')">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="controls-bar" style="margin-bottom: 1rem; justify-content: flex-end;">
+          <button class="btn btn-primary" onclick="window.openExcursionesModal('plantilla-nueva')"><i class="fa-solid fa-plus"></i> Nueva Plantilla</button>
+        </div>
+        <div class="table-container">
+          <table class="members-table">
+            <thead>
+              <tr>
+                <th>Nombre</th>
+                <th>Dimensiones</th>
+                <th>Plazas</th>
+                <th>Acciones</th>
+              </tr>
+            </thead>
+            <tbody id="table-plantillas">
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline" onclick="window.closeExcursionesModal('plantillas-list')">Cerrar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL EDITOR AUTOBUS / PLANTILLA -->
+  <div id="modal-autobus" class="modal-overlay">
+    <div class="modal-content" style="max-width: 650px;">
+      <div class="modal-header">
+        <h2 class="modal-title" id="autobus-modal-title"><i class="fa-solid fa-bus"></i> Configurar Autobús</h2>
+        <button type="button" class="btn-close" onclick="window.closeExcursionesModal('autobus')">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div id="autobus-template-selector" class="form-group" style="display: none; margin-bottom: 1rem;">
+          <label class="form-label">Cargar desde Plantilla:</label>
+          <select id="autobus-plantilla-select" class="form-control" onchange="window.loadPlantillaIntoEditor()"></select>
+        </div>
+        <div class="form-grid">
+          <div class="form-group">
+            <label class="form-label">Nombre del Autobús / Plantilla:</label>
+            <input type="text" id="autobus-nombre" class="form-control" placeholder="Ej. Autobús 1">
+          </div>
+          <div class="form-group" style="display: flex; gap: 0.5rem;">
+            <div style="flex: 1;">
+              <label class="form-label">Filas:</label>
+              <input type="number" id="autobus-filas" class="form-control" value="14" min="1" max="30" onchange="window.renderBusEditor()">
+            </div>
+            <div style="flex: 1;">
+              <label class="form-label">Columnas:</label>
+              <input type="number" id="autobus-columnas" class="form-control" value="5" min="1" max="10" onchange="window.renderBusEditor()">
+            </div>
+          </div>
+        </div>
+        
+        <div class="form-group">
+          <label class="form-label">Herramienta de Edición (haz clic en las celdas):</label>
+          <div id="bus-tools" style="display: flex; gap: 0.5rem; flex-wrap: wrap; margin-bottom: 0.5rem;">
+            <button type="button" class="btn btn-sm btn-outline active" data-tool="asiento" onclick="window.setBusTool('asiento')"><i class="fa-solid fa-chair" style="color: #22c55e;"></i> Asiento</button>
+            <button type="button" class="btn btn-sm btn-outline" data-tool="pasillo" onclick="window.setBusTool('pasillo')"><i class="fa-solid fa-shoe-prints" style="color: #94a3b8;"></i> Pasillo</button>
+            <button type="button" class="btn btn-sm btn-outline" data-tool="puerta" onclick="window.setBusTool('puerta')"><i class="fa-solid fa-door-open" style="color: #eab308;"></i> Puerta</button>
+            <button type="button" class="btn btn-sm btn-outline" data-tool="conductor" onclick="window.setBusTool('conductor')"><i class="fa-solid fa-steering-wheel" style="color: #64748b;"></i> Conductor</button>
+            <button type="button" class="btn btn-sm btn-outline" data-tool="inhabilitado" onclick="window.setBusTool('inhabilitado')"><i class="fa-solid fa-ban" style="color: #ef4444;"></i> Inhabilitado</button>
+          </div>
+        </div>
+
+        <div id="bus-editor-grid" style="display: grid; gap: 5px; margin: 0 auto; max-width: 400px; background: #f1f5f9; padding: 10px; border-radius: 8px;">
+        </div>
+      </div>
+      
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline" onclick="window.closeExcursionesModal('autobus')">Cancelar</button>
+        <button type="button" class="btn btn-primary" onclick="window.saveAutobus()"><i class="fa-solid fa-save"></i> Guardar Autobús</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL ASIGNAR ASIENTO -->
+  <div id="modal-asignar-asiento" class="modal-overlay">
+    <div class="modal-content" style="max-width: 650px;">
+      <div class="modal-header">
+        <h2 class="modal-title" id="asignar-modal-title"><i class="fa-solid fa-arrows-up-down-left-right" style="font-size: 0.85rem; opacity: 0.5;" title="Arrastrar ventana"></i> Asignar Asiento</h2>
+        <button type="button" class="btn-close" onclick="window.closeExcursionesModal('asignar-asiento')">&times;</button>
+      </div>
+      <form id="form-asignar-asiento" onsubmit="window.saveAsientoAssignment(event)">
+        <div class="modal-body">
+          <input type="hidden" id="asignar-excursion-id">
+          <input type="hidden" id="asignar-autobus-id">
+          <input type="hidden" id="asignar-asiento-num">
+          <input type="hidden" id="asignar-inscripcion-id">
+          <input type="hidden" id="asignar-lista-espera-id">
+          
+          <div style="background: var(--info-bg); padding: 0.8rem; border-radius: 6px; margin-bottom: 1rem;">
+            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem;">
+              <div>
+                <strong>Autobús:</strong> <span id="asignar-autobus-nombre"></span> &nbsp;|&nbsp; <strong>Asiento:</strong> <span id="asignar-asiento-display" class="badge badge-info" style="font-size: 0.95rem;"></span>
+              </div>
+              <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+                <div id="group-cambiar-asiento" style="display: none; align-items: center; gap: 0.3rem;">
+                  <label id="label-cambiar-asiento" class="form-label" style="margin: 0; font-size: 0.8rem; font-weight: 600;"><i class="fa-solid fa-arrow-right"></i> Mover a:</label>
+                  <select id="asignar-nuevo-asiento-select" class="form-control" style="width: auto; padding: 0.2rem 0.4rem; font-size: 0.8rem;">
+                    <option value="">(Mismo asiento)</option>
+                  </select>
+                </div>
+                <div id="group-swap-asiento" style="display: none; align-items: center; gap: 0.3rem;">
+                  <label class="form-label" style="margin: 0; font-size: 0.8rem; font-weight: 600;"><i class="fa-solid fa-arrows-rotate"></i> Cambiar con:</label>
+                  <select id="asignar-swap-asiento-select" class="form-control" style="width: auto; padding: 0.2rem 0.4rem; font-size: 0.8rem;">
+                    <option value="">(Nadie)</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Tipo de Pasajero</label>
+            <select id="asignar-tipo-pasajero" class="form-control" onchange="window.togglePasajeroType()">
+              <option value="socio">Socio Registrado</option>
+              <option value="externo">Acompañante / Externo</option>
+            </select>
+          </div>
+
+          <div class="form-group" id="group-socio-search">
+            <label class="form-label">Buscar Socio</label>
+            <input type="text" id="asignar-socio-search" class="form-control search-input" placeholder="Buscar por Nombre, Apellidos o Nº Socio..." onkeyup="window.searchSocioForAsiento(this.value)">
+            <input type="hidden" id="asignar-socio-id">
+            <div id="asignar-socio-results" class="search-results"></div>
+            <div id="asignar-socio-selected" style="margin-top: 0.5rem; font-weight: 600; color: var(--primary);"></div>
+          </div>
+
+          <div class="form-group" id="group-externo-name" style="display: none;">
+            <label class="form-label">Nombre Completo del Pasajero *</label>
+            <input type="text" id="asignar-externo-nombre" class="form-control" placeholder="Nombre y apellidos del acompañante">
+          </div>
+
+          <div class="form-grid" style="margin-top: 0.5rem;">
+            <div class="form-group">
+              <label class="form-label">DNI / NIE</label>
+              <input type="text" id="asignar-dni" class="form-control" placeholder="12345678X">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Teléfono de Contacto</label>
+              <input type="tel" id="asignar-telefono" class="form-control" placeholder="600 000 000">
+            </div>
+          </div>
+
+          <div class="form-group" style="margin-top: 0.5rem;">
+            <label class="form-label">Observaciones / Dietas / Necesidades Especiales</label>
+            <input type="text" id="asignar-observaciones" class="form-control" placeholder="Ej. Menú celíaco, diabético, asiento delantero...">
+          </div>
+
+          <div class="form-group" style="margin-top: 0.75rem; background: #f8fafc; padding: 10px 14px; border-radius: 8px; border: 1.5px solid #cbd5e1;">
+            <label class="form-label" style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0; cursor: pointer;">
+              <span style="display: flex; align-items: center; gap: 8px;">
+                <input type="checkbox" id="asignar-habitacion-individual" style="width: 18px; height: 18px; cursor: pointer;" onchange="window.toggleHabitacionIndividual(this.checked)">
+                <strong>Habitación Individual</strong>
+              </span>
+              <span id="label-suplemento-individual-precio" style="font-weight: bold; color: #0284c7;">+0.00 €</span>
+            </label>
+          </div>
+
+          <hr style="margin: 1.25rem 0; border: none; border-top: 1px solid #cbd5e1;">
+          
+          <h3 style="margin-top: 0; font-size: 1.05rem;"><i class="fa-solid fa-wallet"></i> Control de Pagos</h3>
+          
+          <div class="form-grid">
+            <div class="form-group">
+              <label class="form-label">Total a Pagar (€) *</label>
+              <input type="number" step="0.01" id="asignar-total-pagar" class="form-control" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Abonado (€) *</label>
+              <input type="number" step="0.01" id="asignar-abonado" class="form-control" value="0" required>
+            </div>
+            <div class="form-group" style="grid-column: 1 / -1;">
+              <label class="form-label">Forma de Pago</label>
+              <select id="asignar-forma-pago" class="form-control">
+                <option value="Efectivo">Efectivo</option>
+                <option value="Tarjeta">Tarjeta</option>
+                <option value="Transferencia">Transferencia Bancaria</option>
+                <option value="Bizum">Bizum</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <div class="modal-footer" style="justify-content: space-between;">
+          <div style="display: flex; gap: 0.5rem;">
+            <button type="button" class="btn btn-outline" style="color: var(--danger-color); display: none;" id="btn-liberar-asiento" onclick="window.liberarAsiento()"><i class="fa-solid fa-user-minus"></i> Liberar</button>
+            <button type="button" class="btn btn-outline" style="display: none;" id="btn-imprimir-recibo" onclick="window.printPassengerReceipt()"><i class="fa-solid fa-receipt"></i> Recibo</button>
+          </div>
+          <div style="display: flex; gap: 0.5rem;">
+            <button type="button" class="btn btn-outline" onclick="window.closeExcursionesModal('asignar-asiento')">Cerrar</button>
+            <button type="submit" class="btn btn-primary" id="btn-guardar-asiento"><i class="fa-solid fa-save"></i> Guardar</button>
+          </div>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL LISTA DE ESPERA -->
+  <div id="modal-lista-espera" class="modal-overlay">
+    <div class="modal-content" style="max-width: 550px;">
+      <div class="modal-header">
+        <h2 class="modal-title"><i class="fa-solid fa-clock-rotate-left"></i> Añadir a Lista de Espera</h2>
+        <button type="button" class="btn-close" onclick="window.closeExcursionesModal('lista-espera')">&times;</button>
+      </div>
+      <form id="form-lista-espera" onsubmit="window.saveListaEspera(event)">
+        <div class="modal-body">
+          <input type="hidden" id="espera-id">
+          
+          <div class="form-group">
+            <label class="form-label">Tipo de Solicitante</label>
+            <select id="espera-tipo-pasajero" class="form-control" onchange="window.toggleEsperaType()">
+              <option value="socio">Socio Registrado</option>
+              <option value="externo">Acompañante / Externo</option>
+            </select>
+          </div>
+
+          <div class="form-group" id="group-espera-socio-search">
+            <label class="form-label">Buscar Socio</label>
+            <input type="text" id="espera-socio-search" class="form-control search-input" placeholder="Buscar por Nombre, Apellidos o Nº Socio..." onkeyup="window.searchSocioForEspera(this.value)">
+            <input type="hidden" id="espera-socio-id">
+            <div id="espera-socio-results" class="search-results"></div>
+            <div id="espera-socio-selected" style="margin-top: 0.5rem; font-weight: 600; color: var(--primary);"></div>
+          </div>
+
+          <div class="form-group" id="group-espera-externo-name" style="display: none;">
+            <label class="form-label">Nombre Completo *</label>
+            <input type="text" id="espera-externo-nombre" class="form-control" placeholder="Nombre y apellidos">
+          </div>
+
+          <div class="form-grid">
+            <div class="form-group">
+              <label class="form-label">DNI / NIE</label>
+              <input type="text" id="espera-dni" class="form-control" placeholder="12345678X">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Teléfono de Contacto *</label>
+              <input type="tel" id="espera-telefono" class="form-control" placeholder="600 000 000" required>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Observaciones / Preferencias de Asiento</label>
+            <input type="text" id="espera-observaciones" class="form-control" placeholder="Ej. Viaja con X persona, prefiere delante...">
+          </div>
+
+          <div class="form-group" style="background: #f8fafc; padding: 10px 14px; border-radius: 8px; border: 1.5px solid #cbd5e1;">
+            <label class="form-label" style="display: flex; align-items: center; gap: 8px; margin-bottom: 0; cursor: pointer;">
+              <input type="checkbox" id="espera-habitacion-individual" style="width: 18px; height: 18px; cursor: pointer;">
+              <strong>Solicita Habitación Individual</strong>
+            </label>
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline" onclick="window.closeExcursionesModal('lista-espera')">Cancelar</button>
+          <button type="submit" class="btn btn-primary"><i class="fa-solid fa-save"></i> Guardar en Espera</button>
+        </div>
+      </form>
     </div>
   </div>
 

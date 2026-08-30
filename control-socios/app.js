@@ -978,13 +978,45 @@ function renderTable(colName, data) {
         paymentStatus = '<span class="badge badge-danger" title="Cuota PENDIENTE"><i class="fa-solid fa-triangle-exclamation"></i> DEBE CUOTA</span>';
       }
 
+      const parsePrice = p => typeof p === 'string' ? parseFloat(p.replace(',', '.')) : parseFloat(p);
+      const actividad = state.actividades.find(a => a.id === item.actividadId);
+      const pt = item.pagosTrimestrales || {};
+
+      const trimesterBadges = ['T1', 'T2', 'T3'].map(t => {
+        const defaultPrice = parsePrice(actividad ? actividad['precio' + t] : 0) || 0;
+        const block = pt[t] || {};
+        const isPagado = !!block.pagado;
+        
+        let amount = defaultPrice;
+        if (block.importe !== undefined && block.importe !== null && block.importe !== '') {
+          amount = parseFloat(block.importe) || 0;
+        } else if (block.importeCobrado !== undefined && block.importeCobrado !== null && block.importeCobrado !== '') {
+          amount = parseFloat(block.importeCobrado) || 0;
+        }
+
+        const hasPrice = (defaultPrice > 0) || (amount > 0) || isPagado;
+        if (!hasPrice) return '';
+
+        if (isPagado) {
+          const displayAmount = amount % 1 === 0 ? amount : amount.toFixed(2).replace('.', ',');
+          return `<span style="display: inline-flex; align-items: center; gap: 2px; font-size: 0.72rem; font-weight: 600; padding: 0.12rem 0.45rem; border-radius: 1rem; background-color: #d1e7dd; color: #0f5132;">${t}: ${displayAmount}€ ✓</span>`;
+        } else {
+          return `<span style="display: inline-flex; align-items: center; font-size: 0.72rem; font-weight: 600; padding: 0.12rem 0.45rem; border-radius: 1rem; background-color: #f8d7da; color: #842029;">${t}: Pend.</span>`;
+        }
+      }).filter(Boolean).join('');
+
+      const paymentCellContent = `
+        <div>${paymentStatus}</div>
+        ${trimesterBadges ? `<div style="display: flex; gap: 0.3rem; flex-wrap: wrap; margin-top: 0.3rem;">${trimesterBadges}</div>` : ''}
+      `;
+
       rowContent = `
         <td><strong>${numeroSocio}</strong></td>
         <td>${socioName}</td>
         <td>${actividadName}</td>
         <td>${getActividadDia(item.actividadId)}</td>
         <td>${getActividadHorario(item.actividadId)}</td>
-        <td>${paymentStatus}</td>
+        <td>${paymentCellContent}</td>
         <td><span class="badge ${item.estado === 'Alta' ? 'badge-success' : 'badge-warning'}">${item.estado || '-'}</span></td>
         ${getActionsHTML(colName, item.id, 'Inscripción')}
       `;
@@ -2563,8 +2595,17 @@ window.executeBulkDelete = () => {
 
 // Modals backdrop close
 document.querySelectorAll('.modal-overlay').forEach(overlay => {
+  let isMouseDownOnBackdrop = false;
+
+  overlay.addEventListener('mousedown', (e) => {
+    isMouseDownOnBackdrop = (e.target === overlay);
+  });
+
   overlay.addEventListener('click', (e) => {
-    if (e.target === overlay) overlay.classList.remove('active');
+    if (isMouseDownOnBackdrop && e.target === overlay) {
+      overlay.classList.remove('active');
+    }
+    isMouseDownOnBackdrop = false;
   });
 });
 
@@ -3227,6 +3268,8 @@ window.CUSTOM_REPORT_DICT = {
     { id: 'numeroSocio', label: 'Nº Socio' },
     { id: 'socio', label: 'Nombre Socio' },
     { id: 'actividad', label: 'Actividad' },
+    { id: 'dia', label: 'Día' },
+    { id: 'horario', label: 'Horario' },
     { id: 'estado', label: 'Estado' }
   ],
   cuentas: [
@@ -3736,9 +3779,12 @@ window.generateReport = () => {
         row.sala = getSalaName(item.salaId);
       } else if (col === 'inscripciones') {
         const socio = sociosMap.get(item.socioId);
+        const act = state.actividades.find(a => a.id === item.actividadId);
         row.socio = socio ? `${socio.nombre} ${socio.apellido1}` : '-';
         row.numeroSocio = socio ? socio.numeroSocio : '-';
         row.actividad = getActividadName(item.actividadId);
+        row.dia = act ? (act.dia || '-') : '-';
+        row.horario = act ? (act.horario || '-') : '-';
       }
       return row;
     });

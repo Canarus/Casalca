@@ -1,5 +1,6 @@
 import { state, pagination } from '../state.js';
 import { db, doc, updateDoc, addDoc, collection, deleteDoc } from '../services/db.js';
+import { normalizeSearchText } from '../utils.js';
 
 const formatCurrency = (num) => {
   const n = Number(num) || 0;
@@ -66,12 +67,12 @@ export function renderCuentasTable() {
   updateCuentasSortIcons();
 
   const searchInput = document.getElementById('searchCuentas');
-  const term = (searchInput?.value || '').toLowerCase().trim();
+  const term = normalizeSearchText(searchInput?.value);
   let filtered = [...state.cuentas];
   
   if (term) {
     filtered = filtered.filter(item => {
-      const text = `${item.concepto || ''} ${item.grupo || ''} ${item.tipo || ''} ${item.fecha || ''} ${item.importe || ''}`.toLowerCase();
+      const text = normalizeSearchText(`${item.concepto || ''} ${item.grupo || ''} ${item.tipo || ''} ${item.fecha || ''} ${item.importe || ''}`);
       return text.includes(term);
     });
   }
